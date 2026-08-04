@@ -1,89 +1,178 @@
-import { useState } from 'react';
-import { X, Send } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { X, CheckCircle2, Send, Loader2 } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
-export default function InquiryModal({ product, isOpen, onClose }) {
-  const [quantity, setQuantity] = useState(product?.minOrderQty || 50);
+export default function InquiryModal({ isOpen, onClose, product }) {
+  const { user, token } = useContext(AuthContext);
+  const [quantity, setQuantity] = useState('');
   const [message, setMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
 
-  if (!isOpen || !product) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      setQuantity(product?.moq || '');
+      setMessage(`I am interested in ordering ${product?.title}. Please provide more information about shipping and bulk pricing.`);
+      setSuccess(false);
+      setError('');
+    } else {
+      const timer = setTimeout(() => setIsVisible(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, product]);
 
-  const handleSubmit = (e) => {
+  if (!isOpen && !isVisible) return null;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Yahan Backend par inquiry Save / Email bhejne ki API lag sakti hai
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 2000);
+    if (!user) {
+      setError('Please log in to send an inquiry.');
+      return;
+    }
+    
+    if (quantity < (product?.moq || 1)) {
+      setError(`Minimum order quantity is ${product?.moq || 1} meters.`);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/inquiries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          supplierId: product.supplierId._id,
+          quantity: Number(quantity),
+          message,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to send inquiry');
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition"
-        >
-          <X size={20} />
-        </button>
+    <div 
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+        isOpen ? 'opacity-100 backdrop-blur-sm bg-slate-900/40' : 'opacity-0 pointer-events-none'
+      }`}
+    >
+      <div 
+        className={`relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 transform ${
+          isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+          <h2 className="text-xl font-bold text-slate-800">Send Inquiry</h2>
+          <button 
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        {submitted ? (
-          <div className="text-center py-8 space-y-3">
-            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-              ✓
+        {/* Content */}
+        <div className="p-6">
+          {success ? (
+            <div className="py-8 flex flex-col items-center justify-center text-center animate-fade-in">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-2">Inquiry Sent!</h3>
+              <p className="text-slate-500">The supplier will contact you shortly.</p>
             </div>
-            <h3 className="text-xl font-bold text-slate-800">Inquiry Sent!</h3>
-            <p className="text-slate-500 text-sm">
-              Supplier ko aapki requirement bhej di gayi hai. Wo aapse jald hi contact karenge.
-            </p>
-          </div>
-        ) : (
-          <>
-            <h2 className="text-xl font-bold text-slate-800 mb-1">Send Bulk Inquiry</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              Item: <strong className="text-indigo-600">{product.title}</strong> (Min Qty: {product.minOrderQty} meters)
-            </p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700">Required Quantity (Meters)</label>
-                <input
-                  type="number"
-                  min={product.minOrderQty}
-                  required
-                  className="w-full p-2.5 border rounded-lg focus:outline-indigo-600 text-sm"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
+                <p className="text-sm text-slate-500 mb-1">Product</p>
+                <p className="font-semibold text-slate-800">{product?.title}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Quantity (Meters)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={product?.moq || 1}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-shadow text-slate-800"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Min Order: {product?.moq}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Est. Total
+                  </label>
+                  <div className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium">
+                    ₹{((quantity || 0) * (product?.pricePerMeter || 0)).toLocaleString()}
+                  </div>
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-slate-700">Message / Delivery Location</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Message to Supplier
+                </label>
                 <textarea
-                  rows="3"
                   required
-                  placeholder="Need 500 meters delivered to Kanpur by next week..."
-                  className="w-full p-2.5 border rounded-lg focus:outline-indigo-600 text-sm"
+                  rows={4}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-shadow text-slate-800 resize-none"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 ></textarea>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-600 flex justify-between">
-                <span>Estimated Price:</span>
-                <strong className="text-emerald-700 font-bold">₹{quantity * product.pricePerMeter}</strong>
-              </div>
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+                  {error}
+                </div>
+              )}
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <Send size={16} /> Submit Requirement
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    <span>Send Inquiry</span>
+                  </>
+                )}
               </button>
             </form>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

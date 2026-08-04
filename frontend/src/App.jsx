@@ -14,6 +14,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<h1 className="text-2xl font-bold text-center mt-10">Welcome to B2B Textile Marketplace!</h1>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/supplier-dashboard" element={<ProtectedRoute allowedRole="supplier"><SupplierDashboard /></ProtectedRoute>} />
         </Routes>
       </div>
     </div>

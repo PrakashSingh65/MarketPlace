@@ -7,10 +7,11 @@ import Marketplace from './pages/marketplace';
 import SupplierDashboard from './pages/supplierDashboard';
 import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 from-slate-50 to-slate-100 text-slate-800 flex flex-col font-sans">
       <Navbar />
       <main className="flex-1">
         <Routes>

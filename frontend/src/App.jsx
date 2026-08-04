@@ -3,6 +3,7 @@ import Navbar from './components/navbar';
 import Login from './pages/login';
 import Register from'./pages/register';
 import Marketplace from './pages/marketplace';
+import SupplierDashboard from './pages/supplierDashboard';
 
 export default function App() {
   return (

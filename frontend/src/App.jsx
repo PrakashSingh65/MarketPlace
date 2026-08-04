@@ -1,7 +1,17 @@
-import React from 'react'
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/navbar';
+import Login from './pages/login';
 
 export default function App() {
   return (
-    <div>App</div>
-  )
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <Navbar />
+      <div className="container mx-auto p-4">
+        <Routes>
+          <Route path="/" element={<h1 className="text-2xl font-bold text-center mt-10">Welcome to B2B Textile Marketplace!</h1>} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </div>
+    </div>
+  );
 }

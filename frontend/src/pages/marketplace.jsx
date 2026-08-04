@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Search, Filter } from 'lucide-react';
+import InquiryModal from '../components/InquiryModal';
 
 export default function Marketplace() {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const categories = ['All', 'Cotton', 'Silk', 'Polyester', 'Denim', 'Linen'];
 

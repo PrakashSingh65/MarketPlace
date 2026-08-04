@@ -4,6 +4,7 @@ import Login from './pages/login';
 import Register from'./pages/register';
 import Marketplace from './pages/marketplace';
 import SupplierDashboard from './pages/supplierDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (

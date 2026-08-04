@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import AIAssistant from './components/AIAssistant';
 import ProductDetail from './pages/ProductDetail';
+import profile from './pages/profile';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/supplier-dashboard" element={<ProtectedRoute allowedRole="SUPPLIER"><SupplierDashboard /></ProtectedRoute>} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><profile /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

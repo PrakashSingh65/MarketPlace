@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/navbar';
 import Login from './pages/login';
+import Register from'./pages/register';
+import Marketplace from './pages/marketplace';
 
 export default function App() {
   return (

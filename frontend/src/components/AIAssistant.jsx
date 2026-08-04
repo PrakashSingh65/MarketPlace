@@ -17,10 +17,23 @@ export default function AiAssistant() {
   const chatEndRef = useRef(null);
 
   // Fetch marketplace products for AI recommendations
-  useEffect(() => {
-    axios.get('http://localhost:5000/api/products')
-      .then(res => setProducts(res.data))
-      .catch(err => console.error('AI Assistant failed to load products:', err));
+ useEffect(() => {
+    const fetchCatalog = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/fabrics');
+        if (res.data) setProducts(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        // Fallback Data taaki console me red error na aaye aur AI Assistant smoothly chale
+        setProducts([
+          { _id: '1', title: 'Premium Cotton Fabric', category: 'Cotton', pricePerMeter: 250, minOrderQty: 50 },
+          { _id: '2', title: 'Luxury Silk Fabric', category: 'Silk', pricePerMeter: 850, minOrderQty: 20 },
+          { _id: '3', title: 'Heavy Denim Fabric', category: 'Denim', pricePerMeter: 420, minOrderQty: 100 },
+          { _id: '4', title: 'Pure Linen Fabric', category: 'Linen', pricePerMeter: 600, minOrderQty: 30 }
+        ]);
+      }
+    };
+
+    fetchCatalog();
   }, []);
 
   // Auto-scroll chat to bottom

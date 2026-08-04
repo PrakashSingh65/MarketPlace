@@ -8,6 +8,7 @@ import SupplierDashboard from './pages/supplierDashboard';
 import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
+import AIAssistant from './components/AIAssistant';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      <AIAssistant />
     </div>
   );
 }

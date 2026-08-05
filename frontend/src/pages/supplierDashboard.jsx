@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Package, DollarSign, Image as ImageIcon, Tag, CheckCircle2 } from 'lucide-react';
+import { Plus, Package, CheckCircle2, ShoppingBag } from 'lucide-react';
 
 export default function SupplierDashboard() {
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     price: '',
@@ -16,11 +17,12 @@ export default function SupplierDashboard() {
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  // Existing Products Fetch
   useEffect(() => {
     fetchProducts();
+    fetchSupplierOrders();
   }, []);
 
+  // 1. Fetch Existing Products
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/products`);
@@ -31,6 +33,18 @@ export default function SupplierDashboard() {
     }
   };
 
+  // 2. Fetch Customer Orders
+  const fetchSupplierOrders = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/orders`);
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Error fetching orders for supplier:', err);
+    }
+  };
+
+  // 3. Handle Product Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -46,7 +60,7 @@ export default function SupplierDashboard() {
       if (res.ok) {
         setMessage('Product added successfully! 🎉');
         setFormData({ title: '', price: '', category: 'Cotton', material: '', description: '', image: '' });
-        fetchProducts(); // List refresh karein
+        fetchProducts();
       } else {
         setMessage('Failed to add product');
       }
@@ -57,14 +71,29 @@ export default function SupplierDashboard() {
     }
   };
 
+  // 4. Update Order Status
+  const updateStatus = async (orderId, newStatus) => {
+    try {
+      await fetch(`${apiUrl}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      fetchSupplierOrders(); // Live refresh orders list
+    } catch (err) {
+      console.error('Error updating status:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl font-black">Supplier Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage your catalog and list new fabric materials</p>
+          <p className="text-xs text-slate-400 mt-1">Manage catalog inventory and track customer orders</p>
         </div>
 
+        {/* Product Add & Inventory Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Add Product Form */}
           <div className="lg:col-span-1 bg-slate-900 border border-slate-800 p-6 rounded-3xl h-fit">
@@ -140,7 +169,7 @@ export default function SupplierDashboard() {
             </form>
           </div>
 
-          {/* Product List */}
+          {/* Active Inventory List */}
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-sm font-bold flex items-center gap-2">
               <Package size={16} className="text-indigo-400" /> Active Inventory ({products.length})
@@ -162,6 +191,45 @@ export default function SupplierDashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* 🟢 Customer Orders Section */}
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+          <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <ShoppingBag size={16} className="text-indigo-400" /> Customer Orders ({orders.length})
+          </h2>
+
+          {orders.length === 0 ? (
+            <p className="text-xs text-slate-500">No customer orders received yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((o) => (
+                <div key={o._id} className="bg-slate-950 border border-slate-800/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs">
+                  <div>
+                    <p className="font-bold text-white">Order ID: #{o._id.slice(-6)}</p>
+                    <p className="text-slate-400 mt-0.5">
+                      Buyer: <span className="text-slate-200 font-semibold">{o.shippingAddress?.name || 'Customer'}</span> ({o.shippingAddress?.city || 'N/A'})
+                    </p>
+                    <p className="text-indigo-400 font-bold mt-1">Total: ₹{o.totalAmount}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] text-slate-400">Status:</span>
+                    <select
+                      value={o.status || 'Pending'}
+                      onChange={(e) => updateStatus(o._id, e.target.value)}
+                      className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

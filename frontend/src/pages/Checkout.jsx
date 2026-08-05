@@ -15,7 +15,7 @@ export default function Checkout() {
   const estimatedTax = subtotal * 0.05;
   const grandTotal = subtotal + estimatedTax;
 
-  // 🟢 Real Backend Order Placement Integration
+  // Real Backend Order Placement Integration
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setIsProcessing(true);

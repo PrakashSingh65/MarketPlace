@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, Eye, EyeOff, AlertCircle, ShoppingCart, Store, User, Loader2 } from 'lucide-react';
+import { 
+  Building, Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Layers 
+} from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -32,7 +34,21 @@ export default function Register() {
         throw new Error(data.message || 'Registration failed');
       }
 
-      navigate('/login');
+      // 🟢 1. User token aur details local storage me save karein
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
+      // 🟢 2. Role ke mutabiq right page par navigate karein
+      if (role === 'BUYER') {
+        navigate('/onboarding');
+      } else {
+        navigate('/supplier-dashboard');
+      }
+
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
     } finally {
@@ -41,150 +57,136 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 animate-fade-in">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-indigo-200">
-            <UserPlus className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+        
+        {/* Header Logo */}
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 mb-3">
+            <Layers size={26} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Create Account</h1>
-          <p className="text-slate-500">Join India's largest B2B textile marketplace</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">Create an Account</h1>
+          <p className="text-slate-400 text-xs mt-1">Join the premier B2B Textile Marketplace</p>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 rounded-xl flex items-start gap-3 animate-fade-in border border-red-100">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center font-medium">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="mb-2">
-            <label className="block text-sm font-medium text-slate-700 mb-3">I want to...</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setRole('BUYER')}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  role === 'BUYER'
-                    ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <ShoppingCart className={`w-6 h-6 mb-2 ${role === 'BUYER' ? 'text-indigo-600' : 'text-slate-500'}`} />
-                <div className={`font-semibold ${role === 'BUYER' ? 'text-indigo-900' : 'text-slate-700'}`}>Buyer</div>
-                <div className="text-xs text-slate-500 mt-1">Purchase fabrics wholesale</div>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setRole('SUPPLIER')}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  role === 'SUPPLIER'
-                    ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <Store className={`w-6 h-6 mb-2 ${role === 'SUPPLIER' ? 'text-indigo-600' : 'text-slate-500'}`} />
-                <div className={`font-semibold ${role === 'SUPPLIER' ? 'text-indigo-900' : 'text-slate-700'}`}>Supplier</div>
-                <div className="text-xs text-slate-500 mt-1">Sell your fabrics</div>
-              </button>
-            </div>
+        {/* Registration Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Role Selection Tabs */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl mb-2">
+            <button
+              type="button"
+              onClick={() => setRole('BUYER')}
+              className={`py-2 text-xs font-bold rounded-xl transition ${
+                role === 'BUYER' 
+                  ? 'bg-indigo-600 text-white shadow-md' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              I am a Buyer
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('SUPPLIER')}
+              className={`py-2 text-xs font-bold rounded-xl transition ${
+                role === 'SUPPLIER' 
+                  ? 'bg-indigo-600 text-white shadow-md' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              I am a Supplier
+            </button>
           </div>
 
+          {/* Full Name Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="name">
-              Full Name
-            </label>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Full Name</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-slate-400" />
-              </div>
+              <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
-                id="name"
                 type="text"
                 required
+                placeholder="John Doe"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="John Doe"
               />
             </div>
           </div>
 
+          {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="email">
-              Email Address
-            </label>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Email Address</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-slate-400" />
-              </div>
+              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
-                id="email"
                 type="email"
                 required
+                placeholder="name@company.com"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="you@example.com"
               />
             </div>
           </div>
 
+          {/* Password Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="password">
-              Password
-            </label>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-slate-400" />
-              </div>
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
-                id="password"
                 type={showPassword ? 'text' : 'password'}
                 required
+                placeholder="••••••••"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-                placeholder="••••••••"
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
               >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-                ) : (
-                  <Eye className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-                )}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:brightness-110 text-white rounded-xl font-medium shadow-md shadow-indigo-200 transition-all disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
           >
             {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Creating account...
-              </>
+              <span>Creating Account...</span>
             ) : (
-              'Create Account'
+              <>
+                <span>Register as {role === 'BUYER' ? 'Buyer' : 'Supplier'}</span>
+                <ArrowRight size={16} />
+              </>
             )}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-slate-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-            Sign in
-          </Link>
-        </p>
+        {/* Footer Link */}
+        <div className="text-center mt-6 pt-6 border-t border-slate-800">
+          <p className="text-xs text-slate-400">
+            Already have an account?{' '}
+            <Link to="/login" className="text-indigo-400 font-bold hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </div>
+
       </div>
     </div>
   );

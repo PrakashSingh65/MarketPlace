@@ -55,7 +55,7 @@ export default function Navbar() {
             </a>
             <div className="h-4 w-px bg-slate-200"></div>
             <Link
-              to="/supplier/dashboard"
+              to="/supplier-dashboard"
               className="text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 px-4 py-2 rounded-full font-semibold border border-indigo-100 transition flex items-center gap-1.5"
             >
               <ShieldCheck size={16} /> Supplier Portal
@@ -112,7 +112,7 @@ export default function Navbar() {
             Categories
           </a>
           <Link
-            to="/supplier/dashboard"
+            to="/supplier-dashboard"
             className="block text-indigo-600 font-semibold py-1"
           >
             Supplier Portal

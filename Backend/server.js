@@ -15,8 +15,12 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // backup
+
+app.use('/api/products', productRoutes);
 app.use('/products', productRoutes);
+app.use('/api/fabrics', productRoutes);
 
 
 

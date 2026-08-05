@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 import { CartProvider } from './context/cartContext';
 import Cart from './pages/cart';
+import Checkout from './pages/Checkout';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout/>} />
           </Routes>
         </main>
         <Footer />

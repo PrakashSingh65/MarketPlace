@@ -159,7 +159,7 @@ export default function Cart() {
 
               {/* Checkout CTA */}
               <button
-                onClick={() => alert('Proceeding to Checkout Flow...')}
+                onClick={() => navigate('/checkout')}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-2xl text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
               >
                 Proceed to Checkout <ArrowRight size={16} />

@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, Package, CheckCircle2, ShoppingBag, Building2, 
-  MapPin, Clock, Phone, Layers, AlertTriangle, TrendingUp,
-  Boxes, Trash2
+  MapPin, Clock, Phone, Layers, AlertTriangle, Boxes, 
+  Trash2, Edit3, Eye, EyeOff, X
 } from 'lucide-react';
 
 export default function SupplierDashboard() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [supplierProfile, setSupplierProfile] = useState(null);
+  
+  // Form State (For both Add & Edit)
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     price: '',
     category: 'Cotton',
-    stock: 50, // Default stock quantity
-    material: '',
-    description: '',
-    image: ''
+    stock: 50,
+    isAvailable: true,
+    image: '',
+    description: ''
   });
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -27,7 +31,6 @@ export default function SupplierDashboard() {
     fetchProducts();
     fetchSupplierOrders();
 
-    // Load Onboarding Profile Data
     const savedProfile = localStorage.getItem('supplierProfile');
     if (savedProfile) {
       setSupplierProfile(JSON.parse(savedProfile));
@@ -54,14 +57,21 @@ export default function SupplierDashboard() {
     }
   };
 
+  // 1. ADD or EDIT PRODUCT SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
+    const url = editingId 
+      ? `${apiUrl}/api/products/${editingId}` 
+      : `${apiUrl}/api/products`;
+    
+    const method = editingId ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch(`${apiUrl}/api/products`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...formData, 
@@ -71,11 +81,11 @@ export default function SupplierDashboard() {
       });
 
       if (res.ok) {
-        setMessage('Product added successfully! 🎉');
-        setFormData({ title: '', price: '', category: 'Cotton', stock: 50, material: '', description: '', image: '' });
+        setMessage(editingId ? 'Product updated successfully! ✏️' : 'Product published successfully! 🎉');
+        resetForm();
         fetchProducts();
       } else {
-        setMessage('Failed to add product');
+        setMessage('Failed to save product');
       }
     } catch (err) {
       setMessage('Error connecting to server');
@@ -84,7 +94,62 @@ export default function SupplierDashboard() {
     }
   };
 
-  const updateStatus = async (orderId, newStatus) => {
+  // 2. DELETE PRODUCT
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/products/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchProducts();
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  };
+
+  // 3. TOGGLE AVAILABILITY (Available / Out of Stock)
+  const toggleAvailability = async (product) => {
+    const updatedStatus = !product.isAvailable;
+    try {
+      await fetch(`${apiUrl}/api/products/${product._id || product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable: updatedStatus })
+      });
+      fetchProducts();
+    } catch (err) {
+      console.error('Error updating availability:', err);
+    }
+  };
+
+  // EDIT PREFILL
+  const handleEditClick = (product) => {
+    setEditingId(product._id || product.id);
+    setFormData({
+      title: product.title || product.name || '',
+      price: product.price || '',
+      category: product.category || 'Cotton',
+      stock: product.stock ?? 50,
+      isAvailable: product.isAvailable ?? true,
+      image: product.image || '',
+      description: product.description || ''
+    });
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      title: '',
+      price: '',
+      category: 'Cotton',
+      stock: 50,
+      isAvailable: true,
+      image: '',
+      description: ''
+    });
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
     try {
       await fetch(`${apiUrl}/api/orders/${orderId}/status`, {
         method: 'PUT',
@@ -97,24 +162,22 @@ export default function SupplierDashboard() {
     }
   };
 
-  //  CALCULATED METRICS FOR WIDGETS
   const totalProductsCount = products.length;
-  const activeProductsCount = products.filter(p => (p.stock ?? 10) > 0).length;
+  const activeProductsCount = products.filter(p => (p.isAvailable ?? true) && (p.stock ?? 10) > 0).length;
   const pendingOrdersCount = orders.filter(o => o.status === 'Pending' || !o.status).length;
   const lowStockProducts = products.filter(p => (p.stock ?? 10) < 15);
-  const recentOrders = [...orders].reverse().slice(0, 3); // Top 3 recent orders
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Title */}
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-black">Supplier Control Center</h1>
-          <p className="text-xs text-slate-400 mt-1">Real-time business insights, inventory alerts, and order management</p>
+          <h1 className="text-2xl font-black">Product & Catalog Management</h1>
+          <p className="text-xs text-slate-400 mt-1">Manage catalog listings, inventory stocks, and product availability</p>
         </div>
 
-        {/*  Onboarded Business Profile Banner */}
+        {/* Business Profile Banner */}
         {supplierProfile && (
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-3">
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
@@ -150,7 +213,7 @@ export default function SupplierDashboard() {
           </div>
         )}
 
-        {/* SUGGESTED ANALYTICS WIDGETS GRID */}
+        {/* Analytics Widgets */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3">
             <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
@@ -167,7 +230,7 @@ export default function SupplierDashboard() {
               <CheckCircle2 size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 font-medium">Active In-Stock</p>
+              <p className="text-[10px] text-slate-400 font-medium">Active & Available</p>
               <h3 className="text-lg font-bold text-white">{activeProductsCount}</h3>
             </div>
           </div>
@@ -193,25 +256,22 @@ export default function SupplierDashboard() {
           </div>
         </div>
 
-        {/*  INVENTORY ALERTS WIDGET (Shows when stock < 15) */}
-        {lowStockProducts.length > 0 && (
-          <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl flex items-center justify-between gap-4 text-xs text-rose-300">
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-rose-400 shrink-0" />
-              <span><strong>Inventory Alert:</strong> {lowStockProducts.length} product(s) running low on stock! Consider restocking soon.</span>
-            </div>
-            <span className="font-bold underline text-[11px] cursor-pointer">Review Items</span>
-          </div>
-        )}
-
-        {/* Product Form & Inventory Management */}
+        {/* Form + Catalog Listing */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Add Product Form */}
+          {/* Add / Edit Product Form */}
           <div className="lg:col-span-1 bg-slate-900 border border-slate-800 p-6 rounded-3xl h-fit">
-            <h2 className="text-sm font-bold flex items-center gap-2 mb-4">
-              <Plus size={16} className="text-indigo-400" /> Add New Inventory Product
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold flex items-center gap-2">
+                {editingId ? <Edit3 size={16} className="text-amber-400" /> : <Plus size={16} className="text-indigo-400" />} 
+                {editingId ? 'Edit Product Details' : 'Add New Product'}
+              </h2>
+              {editingId && (
+                <button onClick={resetForm} className="text-slate-400 hover:text-white text-xs flex items-center gap-1">
+                  <X size={14} /> Cancel
+                </button>
+              )}
+            </div>
 
             {message && (
               <div className="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs rounded-xl flex items-center gap-2">
@@ -225,7 +285,7 @@ export default function SupplierDashboard() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Organic Cotton Fabric"
+                  placeholder="e.g. Premium Silk Blend Fabric"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -238,14 +298,14 @@ export default function SupplierDashboard() {
                   <input
                     type="number"
                     required
-                    placeholder="250"
+                    placeholder="350"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Initial Stock (Meters)</label>
+                  <label className="block text-slate-400 mb-1">Stock Quantity</label>
                   <input
                     type="number"
                     required
@@ -273,7 +333,7 @@ export default function SupplierDashboard() {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Image URL</label>
+                <label className="block text-slate-400 mb-1">Upload Product Image URL</label>
                 <input
                   type="url"
                   placeholder="https://images.unsplash.com/..."
@@ -283,90 +343,108 @@ export default function SupplierDashboard() {
                 />
               </div>
 
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="availability"
+                  checked={formData.isAvailable}
+                  onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
+                  className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="availability" className="text-slate-300 cursor-pointer">
+                  Mark as Available in Marketplace
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition mt-2 disabled:opacity-50"
+                className={`w-full font-bold py-2.5 rounded-xl transition mt-2 disabled:opacity-50 text-white ${
+                  editingId ? 'bg-amber-600 hover:bg-amber-500' : 'bg-indigo-600 hover:bg-indigo-500'
+                }`}
               >
-                {loading ? 'Publishing...' : 'Publish Product'}
+                {loading ? 'Saving...' : editingId ? 'Update Product' : 'Publish Product'}
               </button>
             </form>
           </div>
 
-          {/* INVENTORY MANAGEMENT SECTION */}
+          {/* Product Catalog Grid */}
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-sm font-bold flex items-center gap-2">
-              <Package size={16} className="text-indigo-400" /> Active Inventory Management ({products.length})
+              <Package size={16} className="text-indigo-400" /> Managed Product Catalog ({products.length})
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div className="space-y-3">
               {products.map((p) => {
-                const stockQty = p.stock ?? 25; // fallback mock stock
+                const stockQty = p.stock ?? 50;
+                const isAvail = p.isAvailable ?? true;
+                const pId = p._id || p.id;
+
                 return (
-                  <div key={p._id || p.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex gap-3 items-center relative">
-                    <img
-                      src={p.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=300'}
-                      alt={p.title || p.name}
-                      className="w-16 h-16 rounded-xl object-cover border border-slate-800 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-xs text-white truncate">{p.title || p.name}</h3>
-                      <p className="text-[10px] text-slate-400">{p.category}</p>
-                      
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs font-bold text-indigo-400">₹{p.price} / m</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${
-                          stockQty < 15 
-                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                        }`}>
-                          Stock: {stockQty}m
-                        </span>
+                  <div key={pId} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={p.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=300'}
+                        alt={p.title || p.name}
+                        className="w-14 h-14 rounded-xl object-cover border border-slate-800 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-xs text-white truncate">{p.title || p.name}</h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{p.category} • ₹{p.price}/m</p>
+                        
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-semibold border ${
+                            stockQty < 15 
+                              ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
+                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                          }`}>
+                            Stock: {stockQty}m
+                          </span>
+
+                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-semibold border ${
+                            isAvail 
+                              ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' 
+                              : 'bg-slate-800 border-slate-700 text-slate-400'
+                          }`}>
+                            {isAvail ? 'Available' : 'Out of Stock'}
+                          </span>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Action Controls */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <button
+                        onClick={() => toggleAvailability(p)}
+                        title={isAvail ? "Mark Out of Stock" : "Mark Available"}
+                        className={`p-2 rounded-xl border transition ${
+                          isAvail ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                        }`}
+                      >
+                        {isAvail ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+
+                      <button
+                        onClick={() => handleEditClick(p)}
+                        title="Edit Product"
+                        className="p-2 bg-slate-950 border border-slate-800 hover:border-indigo-500/50 text-indigo-400 rounded-xl transition"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(pId)}
+                        title="Delete Product"
+                        className="p-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
-        </div>
-
-        {/* CUSTOMER ORDERS MANAGEMENT */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
-          <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-            <ShoppingBag size={16} className="text-indigo-400" /> Marketplace Orders ({orders.length})
-          </h2>
-
-          {orders.length === 0 ? (
-            <p className="text-xs text-slate-500">No customer orders received yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {orders.map((o) => (
-                <div key={o._id} className="bg-slate-950 border border-slate-800/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs">
-                  <div>
-                    <p className="font-bold text-white">Order ID: #{o._id.slice(-6)}</p>
-                    <p className="text-slate-400 mt-0.5">
-                      Buyer: <span className="text-slate-200 font-semibold">{o.shippingAddress?.name || 'Customer'}</span> ({o.shippingAddress?.city || 'N/A'})
-                    </p>
-                    <p className="text-indigo-400 font-bold mt-1">Total: ₹{o.totalAmount}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-slate-400">Status:</span>
-                    <select
-                      value={o.status || 'Pending'}
-                      onChange={(e) => updateStatus(o._id, e.target.value)}
-                      className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
       </div>

@@ -1,219 +1,133 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Building, Briefcase, Layers, Package, IndianRupee, Sparkles, Mic, ArrowRight, CheckCircle2 
-} from 'lucide-react';
+import { Send, Bot, Building2, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [useAiMode, setUseAiMode] = useState(false);
-  const [isListening, setIsListening] = useState(false);
 
-  // Buyer Onboarding Form State
-  const [formData, setFormData] = useState({
-    businessType: 'Garment Manufacturer',
-    industry: 'Apparel & Fashion',
-    categoriesOfInterest: ['Cotton', 'Denim'],
-    preferredFabricTypes: ['Organic', 'Knit'],
-    typicalOrderQty: '500-1000 meters',
-    budgetRange: '₹50,000 - ₹2,000,000'
-  });
+  // Onboarding Questions Array
+  const questions = [
+    { key: 'businessName', text: "Welcome to the Marketplace!  What is your Business Name?" },
+    { key: 'businessType', text: "Great! What type of business are you? (e.g. Manufacturer, Wholesaler, Fabric Mill)" },
+    { key: 'phone', text: "Got it! Please share your primary Contact Number." },
+    { key: 'address', text: "Where is your business located? (City & State)" },
+    { key: 'operatingHours', text: "What are your Operating Hours? (e.g. Mon-Sat, 9 AM - 7 PM)" },
+    { key: 'categories', text: "Which Product Categories do you specialize in? (e.g. Cotton, Silk, Denim)" },
+    { key: 'fabrics', text: "What specific types of fabrics do you offer? (e.g. Organic Cotton, Premium Rayon)" },
+    { key: 'moq', text: "What is your Minimum Order Quantity (MOQ)? (e.g. 100 meters, 50 rolls)" }
+  ];
 
-  const categoryOptions = ['Cotton', 'Silk', 'Denim', 'Linen', 'Polyester', 'Rayon'];
-  const businessOptions = ['Garment Manufacturer', 'Boutique Owner', 'Wholesaler/Exporter', 'Independent Designer'];
+  const [currentStep, setCurrentStep] = useState(0);
+  const [messages, setMessages] = useState([
+    { sender: 'ai', text: questions[0].text }
+  ]);
+  const [input, setInput] = useState('');
+  const [profileData, setProfileData] = useState({});
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  const toggleCategory = (cat) => {
-    setFormData(prev => {
-      const exists = prev.categoriesOfInterest.includes(cat);
-      return {
-        ...prev,
-        categoriesOfInterest: exists 
-          ? prev.categoriesOfInterest.filter(c => c !== cat)
-          : [...prev.categoriesOfInterest, cat]
-      };
-    });
-  };
-
-  // AI Voice Recognition Simulation for Hands-free Onboarding
-  const handleVoiceInput = () => {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert("Voice input is not supported in this browser.");
-      return;
-    }
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-
-    setIsListening(true);
-    recognition.start();
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setIsListening(false);
-      
-      // Auto fill form based on spoken text
-      if (transcript.toLowerCase().includes('boutique')) {
-        setFormData(prev => ({ ...prev, businessType: 'Boutique Owner' }));
-      }
-      if (transcript.toLowerCase().includes('silk')) {
-        toggleCategory('Silk');
-      }
-      alert(`AI Heard: "${transcript}". Preferences updated!`);
-    };
-
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSend = (e) => {
     e.preventDefault();
-    // Save onboarding data locally
-    localStorage.setItem('buyer_onboarding_data', JSON.stringify(formData));
-    navigate('/');
+    if (!input.trim()) return;
+
+    const userMessage = input.trim();
+    const currentQuestionKey = questions[currentStep].key;
+
+    // Save user answer
+    const updatedProfile = { ...profileData, [currentQuestionKey]: userMessage };
+    setProfileData(updatedProfile);
+
+    // Update Chat History
+    const newMessages = [...messages, { sender: 'user', text: userMessage }];
+
+    if (currentStep + 1 < questions.length) {
+      // Move to Next Question
+      setCurrentStep(currentStep + 1);
+      newMessages.push({ sender: 'ai', text: questions[currentStep + 1].text });
+      setMessages(newMessages);
+      setInput('');
+    } else {
+      // Onboarding Finished
+      newMessages.push({
+        sender: 'ai',
+        text: "Awesome! 🎉 Your supplier profile has been set up successfully. Redirecting you to your Dashboard..."
+      });
+      setMessages(newMessages);
+      setInput('');
+      setIsCompleted(true);
+
+      // Save to localStorage or Backend API
+      localStorage.setItem('supplierProfile', JSON.stringify(updatedProfile));
+
+      // Redirect to Supplier Dashboard after 2 seconds
+      setTimeout(() => {
+        navigate('/supplier-dashboard');
+      }, 2500);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 py-12">
-      <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[600px]">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-6 border-b border-slate-800">
-          <div>
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 mb-2">
-              <Sparkles size={14} /> Personalizing Your Marketplace
+        <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 rounded-2xl flex items-center justify-center">
+              <Bot size={20} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Welcome! Let's Setup Your Profile</h1>
+            <div>
+              <h2 className="text-sm font-bold flex items-center gap-1.5">
+                AI Onboarding Assistant <Sparkles size={14} className="text-amber-400" />
+              </h2>
+              <p className="text-[10px] text-slate-400">Step {Math.min(currentStep + 1, questions.length)} of {questions.length}</p>
+            </div>
           </div>
-
-          {/* AI vs Standard Mode Toggle */}
-          <button
-            type="button"
-            onClick={() => setUseAiMode(!useAiMode)}
-            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-              useAiMode 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                : 'bg-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Sparkles size={14} /> {useAiMode ? 'AI Assistant On' : 'Try AI Onboarding'}
-          </button>
+          {isCompleted && (
+            <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-semibold">
+              <CheckCircle2 size={14} /> Completed
+            </span>
+          )}
         </div>
 
-        {/* AI Assisted Voice/Chat Banner */}
-        {useAiMode && (
-          <div className="mt-6 p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl flex items-center justify-between gap-4">
-            <div className="text-xs">
-              <span className="font-bold text-indigo-300 block mb-0.5">🎙️ Voice & Smart Onboarding Active</span>
-              <p className="text-slate-400">Click the mic and speak e.g., "I run a boutique and need silk fabrics".</p>
-            </div>
-            <button
-              onClick={handleVoiceInput}
-              className={`p-3 rounded-full text-white transition ${
-                isListening ? 'bg-red-500 animate-pulse' : 'bg-indigo-600 hover:bg-indigo-500'
-              }`}
+        {/* Chat Body */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <Mic size={18} />
-            </button>
-          </div>
-        )}
-
-        {/* Main Onboarding Form */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-          
-          {/* 1. Business Type */}
-          <div>
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-              <Building size={14} className="text-indigo-400" /> Business Type
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {businessOptions.map((type) => (
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() => setFormData({ ...formData, businessType: type })}
-                  className={`p-3 rounded-xl border text-xs font-semibold text-left transition flex items-center justify-between ${
-                    formData.businessType === type
-                      ? 'bg-indigo-600/10 border-indigo-500 text-indigo-300'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  {type}
-                  {formData.businessType === type && <CheckCircle2 size={16} className="text-indigo-400" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. Product Categories of Interest */}
-          <div>
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-              <Layers size={14} className="text-purple-400" /> Categories of Interest
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {categoryOptions.map((cat) => {
-                const selected = formData.categoriesOfInterest.includes(cat);
-                return (
-                  <button
-                    type="button"
-                    key={cat}
-                    onClick={() => toggleCategory(cat)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition ${
-                      selected
-                        ? 'bg-purple-600 text-white border-purple-500 shadow-md'
-                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {cat} {selected && '✓'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. Order Quantity & Budget */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                <Package size={14} className="text-emerald-400" /> Typical Order Quantity
-              </label>
-              <select
-                value={formData.typicalOrderQty}
-                onChange={(e) => setFormData({ ...formData, typicalOrderQty: e.target.value })}
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              <div
+                className={`max-w-[80%] p-3.5 rounded-2xl ${
+                  msg.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-br-none'
+                    : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-bl-none'
+                }`}
               >
-                <option value="100-500 meters">100 - 500 meters</option>
-                <option value="500-1000 meters">500 - 1,000 meters</option>
-                <option value="1000-5000 meters">1,000 - 5,000 meters</option>
-                <option value="5000+ meters">Bulk (5,000+ meters)</option>
-              </select>
+                {msg.text}
+              </div>
             </div>
+          ))}
+        </div>
 
-            <div>
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                <IndianRupee size={14} className="text-amber-400" /> Monthly Budget Range
-              </label>
-              <select
-                value={formData.budgetRange}
-                onChange={(e) => setFormData({ ...formData, budgetRange: e.target.value })}
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-              >
-                <option value="Under ₹50,000">Under ₹50,000</option>
-                <option value="₹50,000 - ₹2,000,000">₹50,000 - ₹2,00,000</option>
-                <option value="₹2,00,000 - ₹10,00,000">₹2,00,000 - ₹10,00,000</option>
-                <option value="₹10,00,000+">₹10,00,000+</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Submit Button */}
+        {/* Chat Input */}
+        <form onSubmit={handleSend} className="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+          <input
+            type="text"
+            disabled={isCompleted}
+            placeholder={isCompleted ? "Onboarding finished!" : "Type your answer..."}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+          />
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-2xl text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 mt-4"
+            disabled={isCompleted || !input.trim()}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition disabled:opacity-50"
           >
-            Complete Onboarding & Start Sourcing <ArrowRight size={16} />
+            <Send size={16} />
           </button>
-
         </form>
+
       </div>
     </div>
   );

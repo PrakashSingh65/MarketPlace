@@ -16,6 +16,7 @@ import { CartProvider } from './context/cartContext';
 import Cart from './pages/cart';
 import Checkout from './pages/Checkout';
 import MyOrders from './pages/MyOrder';
+import BuyerDashboard from './pages/BuyerDashboard';
 
 export default function App() {
   return (
@@ -29,6 +30,8 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/supplier-dashboard" element={<ProtectedRoute allowedRole="SUPPLIER"><SupplierDashboard /></ProtectedRoute>} />
+            <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
+            <Route path="/orders" element={<BuyerDashboard/>} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -36,6 +39,7 @@ export default function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout/>} />
             <Route path="/orders" element={<MyOrders/>} />
+            <Routh path="/onboarding" element={<Onboarding />} />
           </Routes>
         </main>
         <Footer />

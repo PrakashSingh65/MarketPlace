@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Package, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { Plus, Package, CheckCircle2, ShoppingBag, Building2, MapPin, Clock, Phone, Layers } from 'lucide-react';
 
 export default function SupplierDashboard() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [supplierProfile, setSupplierProfile] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     price: '',
@@ -20,9 +21,14 @@ export default function SupplierDashboard() {
   useEffect(() => {
     fetchProducts();
     fetchSupplierOrders();
+
+    // Load Onboarding Profile Data from LocalStorage
+    const savedProfile = localStorage.getItem('supplierProfile');
+    if (savedProfile) {
+      setSupplierProfile(JSON.parse(savedProfile));
+    }
   }, []);
 
-  // 1. Fetch Existing Products
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/products`);
@@ -33,18 +39,16 @@ export default function SupplierDashboard() {
     }
   };
 
-  // 2. Fetch Customer Orders
   const fetchSupplierOrders = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/orders`);
       const data = await res.json();
       setOrders(data);
     } catch (err) {
-      console.error('Error fetching orders for supplier:', err);
+      console.error('Error fetching orders:', err);
     }
   };
 
-  // 3. Handle Product Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -71,7 +75,6 @@ export default function SupplierDashboard() {
     }
   };
 
-  // 4. Update Order Status
   const updateStatus = async (orderId, newStatus) => {
     try {
       await fetch(`${apiUrl}/api/orders/${orderId}/status`, {
@@ -79,7 +82,7 @@ export default function SupplierDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
-      fetchSupplierOrders(); // Live refresh orders list
+      fetchSupplierOrders();
     } catch (err) {
       console.error('Error updating status:', err);
     }
@@ -92,6 +95,42 @@ export default function SupplierDashboard() {
           <h1 className="text-2xl font-black">Supplier Dashboard</h1>
           <p className="text-xs text-slate-400 mt-1">Manage catalog inventory and track customer orders</p>
         </div>
+
+        {/* 🏢 Onboarded Business Profile Banner */}
+        {supplierProfile && (
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+              <div className="w-10 h-10 bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 rounded-xl flex items-center justify-center">
+                <Building2 size={20} />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">{supplierProfile.businessName || 'My Textile Mill'}</h2>
+                <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md font-semibold">
+                  {supplierProfile.businessType || 'Verified Supplier'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                <p className="text-slate-500 text-[10px] flex items-center gap-1"><MapPin size={10} /> Location</p>
+                <p className="font-semibold text-slate-200 mt-0.5">{supplierProfile.address || 'N/A'}</p>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                <p className="text-slate-500 text-[10px] flex items-center gap-1"><Phone size={10} /> Contact</p>
+                <p className="font-semibold text-slate-200 mt-0.5">{supplierProfile.phone || 'N/A'}</p>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                <p className="text-slate-500 text-[10px] flex items-center gap-1"><Clock size={10} /> Hours</p>
+                <p className="font-semibold text-slate-200 mt-0.5">{supplierProfile.operatingHours || 'N/A'}</p>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                <p className="text-slate-500 text-[10px] flex items-center gap-1"><Layers size={10} /> MOQ</p>
+                <p className="font-semibold text-indigo-400 mt-0.5">{supplierProfile.moq || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Product Add & Inventory Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -193,7 +232,7 @@ export default function SupplierDashboard() {
           </div>
         </div>
 
-        {/* 🟢 Customer Orders Section */}
+        {/* Customer Orders Section */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
           <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
             <ShoppingBag size={16} className="text-indigo-400" /> Customer Orders ({orders.length})

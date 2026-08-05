@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -6,10 +6,12 @@ import {
   Check, Layers, Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
+import { CartContext } from '../context/cartContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useContext(CartContext);
   const [product, setProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(100); // Default order quantity
@@ -158,7 +160,10 @@ export default function ProductDetail() {
           <div className="pt-4 space-y-3">
             <div className="flex gap-3">
               <button
-                onClick={() => alert(`Added ${quantity} meters of ${product.title} to your Wholesale Cart!`)}
+                onClick={() => {
+                  addToCart(product, quantity);
+                  alert('Product added to cart!');
+                }}
                 className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white py-3.5 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={16} /> Add to Cart

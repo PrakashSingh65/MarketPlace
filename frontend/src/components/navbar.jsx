@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import {CartContext} from "../context/CartContext";
+import {CartContext} from "../context/cartContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,6 +59,14 @@ export default function Navbar() {
               className="text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 px-4 py-2 rounded-full font-semibold border border-indigo-100 transition flex items-center gap-1.5"
             >
               <ShieldCheck size={16} /> Supplier Portal
+            </Link>
+            <Link to="/cart" className="relative text-slate-600 hover:text-indigo-600 p-2 transition">
+              <ShoppingBag size={20} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {totalItems}
+                </span>
+              )}
             </Link>
           </div>
 

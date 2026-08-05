@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown, Filter, Sparkles, ShoppingBag } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowUpDown, Filter, Sparkles, ShoppingBag, Star } from 'lucide-react';
+import ProductReviewModal from '../components/ProductReviewModal';
 
 export default function Home({ addToCart }) {
   const [products, setProducts] = useState([]);
@@ -8,8 +9,11 @@ export default function Home({ addToCart }) {
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('default'); // 'default', 'low-high', 'high-low'
+  const [sortBy, setSortBy] = useState('default');
   const [loading, setLoading] = useState(true);
+
+  // Modal State for Reviews
+  const [selectedProductForReview, setSelectedProductForReview] = useState(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -21,7 +25,6 @@ export default function Home({ addToCart }) {
   useEffect(() => {
     let result = [...products];
 
-    // 1. Search Filter
     if (searchTerm.trim() !== '') {
       result = result.filter(p => 
         (p.title || p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,12 +32,10 @@ export default function Home({ addToCart }) {
       );
     }
 
-    // 2. Category Filter
     if (selectedCategory !== 'All') {
       result = result.filter(p => p.category === selectedCategory);
     }
 
-    // 3. Price Sorting
     if (sortBy === 'low-high') {
       result.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortBy === 'high-low') {
@@ -74,10 +75,8 @@ export default function Home({ addToCart }) {
           </p>
         </div>
 
-        {/* SEARCH & FILTER BAR */}
+        {/*  SEARCH & FILTER BAR */}
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
-          
-          {/* Search Input */}
           <div className="flex-1 min-w-[240px] relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
@@ -89,7 +88,6 @@ export default function Home({ addToCart }) {
             />
           </div>
 
-          {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             {categories.map((cat) => (
               <button
@@ -106,7 +104,6 @@ export default function Home({ addToCart }) {
             ))}
           </div>
 
-          {/* Price Sorting Dropdown */}
           <div className="flex items-center gap-2">
             <ArrowUpDown size={14} className="text-slate-500" />
             <select
@@ -119,7 +116,6 @@ export default function Home({ addToCart }) {
               <option value="high-low">Price: High to Low</option>
             </select>
           </div>
-
         </div>
 
         {/* PRODUCT GRID */}
@@ -156,7 +152,21 @@ export default function Home({ addToCart }) {
 
                     <div>
                       <h3 className="font-bold text-xs text-white truncate">{product.title || product.name}</h3>
-                      <p className="text-indigo-400 font-extrabold text-sm mt-1">₹{product.price} <span className="text-[10px] text-slate-500 font-normal">/ meter</span></p>
+                      <p className="text-indigo-400 font-extrabold text-sm mt-1">
+                        ₹{product.price} <span className="text-[10px] text-slate-500 font-normal">/ meter</span>
+                      </p>
+
+                      {/*  RATING & REVIEW BUTTON (PASTED HERE) */}
+                      <button 
+                        onClick={() => setSelectedProductForReview(product)}
+                        className="flex items-center gap-1 text-amber-400 text-xs mt-2 hover:opacity-80 transition cursor-pointer"
+                      >
+                        <Star size={12} fill="currentColor" />
+                        <span className="font-bold text-white text-[11px]">
+                          {product.rating ? Number(product.rating).toFixed(1) : 'New'}
+                        </span>
+                        <span className="text-slate-500 text-[10px]">({product.numReviews || 0} reviews)</span>
+                      </button>
                     </div>
                   </div>
 
@@ -179,6 +189,15 @@ export default function Home({ addToCart }) {
         )}
 
       </div>
+
+      {/* REVIEW MODAL POPUP */}
+      {selectedProductForReview && (
+        <ProductReviewModal
+          product={selectedProductForReview}
+          onClose={() => setSelectedProductForReview(null)}
+          onReviewSubmitted={() => fetchProducts()}
+        />
+      )}
     </div>
   );
 }

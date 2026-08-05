@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Package, CheckCircle2, ShoppingBag, Building2, 
   MapPin, Clock, Phone, Layers, AlertTriangle, Boxes, 
-  Trash2, Edit3, Eye, EyeOff, X
+  Trash2, Edit3, Eye, EyeOff, X, Truck, User, Calendar
 } from 'lucide-react';
 
 export default function SupplierDashboard() {
@@ -10,7 +10,7 @@ export default function SupplierDashboard() {
   const [orders, setOrders] = useState([]);
   const [supplierProfile, setSupplierProfile] = useState(null);
   
-  // Form State (For both Add & Edit)
+  // Form State
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -57,7 +57,7 @@ export default function SupplierDashboard() {
     }
   };
 
-  // 1. ADD or EDIT PRODUCT SUBMIT
+  // ADD or EDIT PRODUCT SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -94,20 +94,18 @@ export default function SupplierDashboard() {
     }
   };
 
-  // 2. DELETE PRODUCT
+  // DELETE PRODUCT
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       const res = await fetch(`${apiUrl}/api/products/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchProducts();
-      }
+      if (res.ok) fetchProducts();
     } catch (err) {
       console.error('Error deleting product:', err);
     }
   };
 
-  // 3. TOGGLE AVAILABILITY (Available / Out of Stock)
+  // TOGGLE AVAILABILITY
   const toggleAvailability = async (product) => {
     const updatedStatus = !product.isAvailable;
     try {
@@ -149,6 +147,7 @@ export default function SupplierDashboard() {
     });
   };
 
+  // UPDATE ORDER STATUS (Pending -> Accepted -> Preparing -> Ready for Dispatch -> Completed)
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       await fetch(`${apiUrl}/api/orders/${orderId}/status`, {
@@ -159,6 +158,22 @@ export default function SupplierDashboard() {
       fetchSupplierOrders();
     } catch (err) {
       console.error('Error updating status:', err);
+    }
+  };
+
+  // Status Badge Styling Helper
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Accepted':
+        return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
+      case 'Preparing':
+        return 'bg-purple-500/10 border-purple-500/20 text-purple-400';
+      case 'Ready for Dispatch':
+        return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+      case 'Completed':
+        return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
+      default:
+        return 'bg-slate-800 border-slate-700 text-slate-300'; // Pending
     }
   };
 
@@ -173,11 +188,11 @@ export default function SupplierDashboard() {
         
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-black">Product & Catalog Management</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage catalog listings, inventory stocks, and product availability</p>
+          <h1 className="text-2xl font-black">Supplier Control Center</h1>
+          <p className="text-xs text-slate-400 mt-1">Manage product listings, inventory stock, and customer orders</p>
         </div>
 
-        {/* Business Profile Banner */}
+        {/* 🏢 Business Profile Banner */}
         {supplierProfile && (
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-3">
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
@@ -213,7 +228,7 @@ export default function SupplierDashboard() {
           </div>
         )}
 
-        {/* Analytics Widgets */}
+        {/* 📈 Analytics Widgets */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3">
             <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
@@ -256,10 +271,87 @@ export default function SupplierDashboard() {
           </div>
         </div>
 
-        {/* Form + Catalog Listing */}
+        {/* 🛒 CUSTOMER ORDERS MANAGEMENT SECTION */}
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <ShoppingBag size={16} className="text-indigo-400" /> Received Customer Orders ({orders.length})
+              </h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">View incoming order details and update fulfillment status</p>
+            </div>
+          </div>
+
+          {orders.length === 0 ? (
+            <div className="p-8 text-center bg-slate-950 rounded-2xl border border-slate-800 text-slate-500 text-xs">
+              No customer orders received yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => {
+                const currentStatus = order.status || 'Pending';
+                return (
+                  <div key={order._id} className="bg-slate-950 border border-slate-800 p-5 rounded-2xl space-y-4 text-xs">
+                    
+                    {/* Header Details */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                      <div>
+                        <span className="font-bold text-white">Order ID: #{order._id.slice(-6)}</span>
+                        <div className="flex items-center gap-3 text-slate-400 text-[10px] mt-1">
+                          <span className="flex items-center gap-1"><User size={12} /> {order.shippingAddress?.name || 'Customer'}</span>
+                          <span className="flex items-center gap-1"><MapPin size={12} /> {order.shippingAddress?.city || 'Location N/A'}</span>
+                          <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(order.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Status Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold ${getStatusBadge(currentStatus)}`}>
+                          {currentStatus}
+                        </span>
+                        
+                        <select
+                          value={currentStatus}
+                          onChange={(e) => updateOrderStatus(order._id, e.target.value)}
+                          className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Accepted">Accepted</option>
+                          <option value="Preparing">Preparing</option>
+                          <option value="Ready for Dispatch">Ready for Dispatch</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Order Items Breakdown */}
+                    <div className="bg-slate-900/60 p-3 rounded-xl space-y-2 border border-slate-800/50">
+                      <p className="text-[10px] font-bold text-slate-400">Order Line Items:</p>
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-slate-300 text-xs">
+                          <span>{item.title} x <strong className="text-white">{item.quantity}</strong></span>
+                          <span className="text-indigo-400 font-semibold">₹{item.price * item.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Total Amount Footer */}
+                    <div className="flex justify-between items-center pt-1 text-xs">
+                      <span className="text-slate-400">Grand Total:</span>
+                      <span className="text-white font-bold text-sm">₹{order.totalAmount}</span>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Product Catalog Management Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Add / Edit Product Form */}
+          {/* Add / Edit Form */}
           <div className="lg:col-span-1 bg-slate-900 border border-slate-800 p-6 rounded-3xl h-fit">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold flex items-center gap-2">
@@ -367,86 +459,7 @@ export default function SupplierDashboard() {
               </button>
             </form>
           </div>
-
-          {/* Product Catalog Grid */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-sm font-bold flex items-center gap-2">
-              <Package size={16} className="text-indigo-400" /> Managed Product Catalog ({products.length})
-            </h2>
-
-            <div className="space-y-3">
-              {products.map((p) => {
-                const stockQty = p.stock ?? 50;
-                const isAvail = p.isAvailable ?? true;
-                const pId = p._id || p.id;
-
-                return (
-                  <div key={pId} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={p.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=300'}
-                        alt={p.title || p.name}
-                        className="w-14 h-14 rounded-xl object-cover border border-slate-800 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-xs text-white truncate">{p.title || p.name}</h3>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{p.category} • ₹{p.price}/m</p>
-                        
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-semibold border ${
-                            stockQty < 15 
-                              ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                          }`}>
-                            Stock: {stockQty}m
-                          </span>
-
-                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-semibold border ${
-                            isAvail 
-                              ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' 
-                              : 'bg-slate-800 border-slate-700 text-slate-400'
-                          }`}>
-                            {isAvail ? 'Available' : 'Out of Stock'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Controls */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <button
-                        onClick={() => toggleAvailability(p)}
-                        title={isAvail ? "Mark Out of Stock" : "Mark Available"}
-                        className={`p-2 rounded-xl border transition ${
-                          isAvail ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                        }`}
-                      >
-                        {isAvail ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-
-                      <button
-                        onClick={() => handleEditClick(p)}
-                        title="Edit Product"
-                        className="p-2 bg-slate-950 border border-slate-800 hover:border-indigo-500/50 text-indigo-400 rounded-xl transition"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(pId)}
-                        title="Delete Product"
-                        className="p-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
-
       </div>
     </div>
   );

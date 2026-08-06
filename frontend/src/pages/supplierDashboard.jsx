@@ -80,7 +80,7 @@ export default function SupplierDashboard() {
           <p style={{ color: '#94a3b8', fontSize: '12px' }}>Manage your catalog and uploads</p>
         </div>
 
-        {/* 🟢 ADD FABRIC BUTTON */}
+        {/* ADD FABRIC BUTTON */}
         <button
           onClick={() => setIsModalOpen(true)}
           style={{
@@ -122,7 +122,7 @@ export default function SupplierDashboard() {
         )}
       </div>
 
-      {/* 🖼️ POPUP UPLOAD MODAL */}
+      {/* POPUP UPLOAD MODAL */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',

@@ -24,7 +24,7 @@ const productSchema = new mongoose.Schema(
     composition: String,
     colors: [String],
     images: [String],
-    image: String,
+    imagePublicId: [String],
     isAvailable: { type: Boolean, default: true },
     
     // Rating and Reviews Fields

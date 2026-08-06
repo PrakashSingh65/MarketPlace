@@ -1,4 +1,22 @@
 import Product from '../models/Product.js';
+import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier";
+
+const uploadImage = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "products",
+      },
+      (error, result) => {
+        if (result) resolve(result);
+        else reject(error);
+      }
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
 
 
 export const getProducts = async (req, res) => {
@@ -26,7 +44,29 @@ export const getProducts = async (req, res) => {
 
 export const addProduct = async (req, res) => {
   try {
-    const { title, description, category, pricePerMeter, moq, stockMeters, gsm, composition, colors, images } = req.body;
+    const {
+      title,
+      description,
+      category,
+      pricePerMeter,
+      moq,
+      stockMeters,
+      gsm,
+      composition,
+      colors,
+    } = req.body;
+
+    let images = [];
+    let imagePublicId = [];
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploaded = await uploadImage(file.buffer);
+
+        images.push(uploaded.secure_url);
+        imagePublicId.push(uploaded.public_id);
+      }
+    }
 
     const product = new Product({
       supplierId: req.user.userId,
@@ -38,14 +78,21 @@ export const addProduct = async (req, res) => {
       stockMeters,
       gsm,
       composition,
-      colors,
+      colors: colors ? JSON.parse(colors) : [],
       images,
+      imagePublicId,
     });
 
     await product.save();
-    res.status(201).json({ message: 'Product added successfully', product });
-  } catch (error) {
-    res.status(500).json({ message: 'Error adding product', error: error.message });
+
+    res.status(201).json({
+      message: "Product Added Successfully",
+      product,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
 

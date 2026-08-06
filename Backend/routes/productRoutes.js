@@ -17,9 +17,7 @@ router.get("/:id", getProductById);
 
 router.post(
   "/",
-  verifyToken,
-  checkRole(["SUPPLIER"]),
-  upload.array("images", 5),
+  upload.single("images"),
   addProduct
 );
 

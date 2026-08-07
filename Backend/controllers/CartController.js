@@ -75,3 +75,36 @@ export const getCart = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Remove Item from Cart
+export const removeFromCart = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user?._id?.toString() || req.user?.id?.toString() || 'guest_user_123';
+
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'Cart not found' });
+    }
+
+    // Product ID match karke array se remove karna
+    cart.items = cart.items.filter(
+      (item) => item.productId && item.productId.toString() !== productId.toString()
+    );
+
+    await cart.save();
+
+    // Updated cart return karna
+    const populatedCart = await Cart.findById(cart._id).populate('items.productId');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Item removed from cart successfully',
+      cart: populatedCart || cart,
+    });
+  } catch (error) {
+    console.error('REMOVE FROM CART ERROR:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Internal Server Error' });
+  }
+};

@@ -6,7 +6,7 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Cart Items from API & LocalStorage
+  // Fetch Cart Items
   const fetchCartItems = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -19,15 +19,15 @@ export default function Cart() {
       const data = await res.json();
 
       if (res.ok && data.cart && data.cart.items) {
-        // Backend DB items map karein
-        const formatted = data.cart.items.map((item) => ({
-          ...item.productId,
-          quantity: item.quantity,
-          cartItemId: item._id,
-        }));
+        const formatted = data.cart.items
+          .filter((item) => item.productId) // null products check
+          .map((item) => ({
+            ...item.productId,
+            quantity: item.quantity,
+            cartItemId: item._id,
+          }));
         setCartItems(formatted);
       } else {
-        // Fallback to LocalStorage
         const localData = JSON.parse(localStorage.getItem('cart') || '[]');
         setCartItems(localData);
       }
@@ -44,7 +44,40 @@ export default function Cart() {
     fetchCartItems();
   }, []);
 
-  // Quantity Handler
+  //  DELETE ITEM HANDLER (API + LocalStorage Sync)
+  const removeItem = async (productId) => {
+    try {
+      const token = localStorage.getItem('token');
+
+      // 1. Backend API Call
+      await fetch(`/api/cart/remove/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      // 2. Update Local State
+      const updatedCart = cartItems.filter(
+        (item) => (item._id || item.id) !== productId
+      );
+      setCartItems(updatedCart);
+
+      // 3. Sync LocalStorage
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
+    } catch (err) {
+      console.error('Delete Error:', err);
+      
+      // Fallback: Agar Backend down ho toh LocalStorage se remove kar do
+      const updatedCart = cartItems.filter(
+        (item) => (item._id || item.id) !== productId
+      );
+      setCartItems(updatedCart);
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
+    }
+  };
+
+  // ➕ / ➖ Quantity Handler
   const updateQuantity = (id, delta) => {
     const updated = cartItems.map((item) => {
       if ((item._id || item.id) === id) {
@@ -53,13 +86,6 @@ export default function Cart() {
       }
       return item;
     });
-    setCartItems(updated);
-    localStorage.setItem('cart', JSON.stringify(updated));
-  };
-
-  // Remove Item Handler
-  const removeItem = (id) => {
-    const updated = cartItems.filter((item) => (item._id || item.id) !== id);
     setCartItems(updated);
     localStorage.setItem('cart', JSON.stringify(updated));
   };
@@ -105,55 +131,65 @@ export default function Cart() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div
-                  key={item._id || item.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4"
-                >
-                  <img
-                    src={
-                      (item.images && item.images[0]) ||
-                      item.image ||
-                      'https://via.placeholder.com/100'
-                    }
-                    alt={item.title || item.name}
-                    className="w-20 h-20 object-cover rounded-xl bg-slate-950"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-white truncate">
-                      {item.title || item.name}
-                    </h3>
-                    <p className="text-xs text-indigo-400 font-semibold mt-1">
-                      ₹{item.price} / meter
-                    </p>
-                    <div className="flex items-center gap-3 mt-3">
-                      <div className="flex items-center border border-slate-700 bg-slate-950 rounded-lg">
+              {cartItems.map((item) => {
+                const itemId = item._id || item.id;
+                const displayImage =
+                  (item.images && item.images[0]) ||
+                  item.image ||
+                  'https://via.placeholder.com/100';
+
+                return (
+                  <div
+                    key={itemId}
+                    className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-4"
+                  >
+                    <img
+                      src={displayImage}
+                      alt={item.title || item.name}
+                      className="w-20 h-20 object-cover rounded-xl bg-slate-950"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-white truncate">
+                        {item.title || item.name}
+                      </h3>
+                      <p className="text-xs text-indigo-400 font-semibold mt-1">
+                        ₹{item.price} / meter
+                      </p>
+
+                      <div className="flex items-center gap-3 mt-3">
+                        {/* Quantity Controls */}
+                        <div className="flex items-center border border-slate-700 bg-slate-950 rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(itemId, -1)}
+                            className="p-1.5 text-slate-400 hover:text-white transition"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="px-3 text-xs font-bold">{item.quantity || 1}</span>
+                          <button
+                            onClick={() => updateQuantity(itemId, 1)}
+                            className="p-1.5 text-slate-400 hover:text-white transition"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+
+                        {/* DELETE BUTTON */}
                         <button
-                          onClick={() => updateQuantity(item._id || item.id, -1)}
-                          className="p-1 text-slate-400 hover:text-white"
+                          onClick={() => removeItem(itemId)}
+                          title="Remove item"
+                          className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg transition"
                         >
-                          <Minus size={14} />
-                        </button>
-                        <span className="px-3 text-xs font-bold">{item.quantity || 1}</span>
-                        <button
-                          onClick={() => updateQuantity(item._id || item.id, 1)}
-                          className="p-1 text-slate-400 hover:text-white"
-                        >
-                          <Plus size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
-                      <button
-                        onClick={() => removeItem(item._id || item.id)}
-                        className="text-rose-500 hover:text-rose-400 p-1"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
+            {/* Summary Box */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 h-fit space-y-4">
               <h3 className="text-sm font-bold border-b border-slate-800 pb-3">Order Summary</h3>
               <div className="space-y-2 text-xs text-slate-400">

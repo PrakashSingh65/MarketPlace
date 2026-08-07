@@ -1,38 +1,33 @@
-import Cart from '../models/Cart.js';
+import mongoose from 'mongoose';
 
-// Get User Cart
-export const getCart = async (req, res) => {
-  try {
-    let cart = await Cart.findOne({ userId: req.user._id }).populate('items.productId');
-    if (!cart) {
-      cart = await Cart.create({ userId: req.user._id, items: [] });
+const cartItemSchema = new mongoose.Schema(
+  {
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1
     }
-    res.json(cart);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+  },
+  { _id: false }
+);
 
-// Add / Update Item in Cart
-export const addToCart = async (req, res) => {
-  const { productId, quantity } = req.body;
-  try {
-    let cart = await Cart.findOne({ userId: req.user._id });
-    if (!cart) {
-      cart = new Cart({ userId: req.user._id, items: [] });
-    }
+const cartSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      unique: true
+    },
+    items: [cartItemSchema]
+  },
+  { timestamps: true }
+);
 
-    const itemIndex = cart.items.findIndex(p => p.productId.toString() === productId);
-    if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity || 1;
-    } else {
-      cart.items.push({ productId, quantity: quantity || 1 });
-    }
-
-    await cart.save();
-    const updatedCart = await Cart.findById(cart._id).populate('items.productId');
-    res.json(updatedCart);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+const Cart = mongoose.model('Cart', cartSchema);
+export default Cart;

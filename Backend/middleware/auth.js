@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-export const verifyToken = (req, res, next) => {
+const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -9,7 +9,7 @@ export const verifyToken = (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     req.user = decoded;
     next();
   } catch (error) {
@@ -17,8 +17,7 @@ export const verifyToken = (req, res, next) => {
   }
 };
 
-
-export const checkRole = (roles) => {
+const checkRole = (roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Unauthorized access for this role.' });
@@ -26,3 +25,6 @@ export const checkRole = (roles) => {
     next();
   };
 };
+
+export { verifyToken, checkRole };
+export default verifyToken;

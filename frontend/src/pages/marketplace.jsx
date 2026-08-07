@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Package, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import ProductCard, { categoryColors } from '../components/ProductCard';
+import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
 import InquiryModal from '../components/InquiryModal';
 

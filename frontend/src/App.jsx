@@ -25,21 +25,76 @@ export default function App() {
         <Navbar />
         <main className="flex-1">
           <Routes>
+            {/* 🌐 Public Routes (Koi bhi open kar sakta hai) */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/supplier-dashboard" element={<ProtectedRoute allowedRole="SUPPLIER"><SupplierDashboard /></ProtectedRoute>} />
-            <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
-            <Route path="/orders" element={<BuyerDashboard/>} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout/>} />
-            <Route path="/orders" element={<MyOrders/>} />
-            <Route path="/onboarding" element={<Onboarding />} />
+
+            {/* 🔒 Protected Supplier Routes */}
+            <Route
+              path="/supplier-dashboard"
+              element={
+                <ProtectedRoute allowedRole="SUPPLIER">
+                  <SupplierDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 🔒 Protected Buyer & User Routes (Logout hone par login page redirect karenge) */}
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buyer-dashboard"
+              element={
+                <ProtectedRoute>
+                  <BuyerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <MyOrders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 Fallback */}
+            <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>
         <Footer />

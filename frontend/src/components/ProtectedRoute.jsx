@@ -1,21 +1,15 @@
-import { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
 
-export default function ProtectedRoute({ children, allowedRole }) {
-  const { user, token } = useContext(AuthContext);
+const ProtectedRoute = () => {
+  const token = localStorage.getItem('token'); // Ya auth token jo aap use kar rahe ho
 
-  
-  if (!token || !user) {
+  // Agar token nahi hai, toh seedha Login Page par bhej do
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-   
-  if (allowedRole && user.role !== allowedRole) {
-    alert(`Access Denied! Only ${allowedRole}s can access this page.`);
-    return <Navigate to="/" replace />;
-  }
+  // Agar logged in hai, toh protected routes (e.g. Cart) render hone do
+  return <Outlet />;
+};
 
-  
-  return children;
-}
+export default ProtectedRoute;

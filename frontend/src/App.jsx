@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/navbar';
 import Footer from './components/Footer';
@@ -21,17 +22,23 @@ import BuyerDashboard from './pages/BuyerDashboard';
 export default function App() {
   return (
     <CartProvider>
-      <div className="min-h-screen bg-slate-50 from-slate-50 to-slate-100 text-slate-800 flex flex-col">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+        {/* Navigation Bar */}
         <Navbar />
+
+        {/* Dynamic Route Content */}
         <main className="flex-1">
           <Routes>
-            {/* 🌐 Public Routes (Koi bhi open kar sakta hai) */}
+            {/* 🌐 Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/onboarding" element={<Onboarding />} />
+
+            {/* 🛒 Cart Page (Accessible directly or protected) */}
+            <Route path="/cart" element={<Cart />} />
 
             {/* 🔒 Protected Supplier Routes */}
             <Route
@@ -43,7 +50,7 @@ export default function App() {
               }
             />
 
-            {/* 🔒 Protected Buyer & User Routes (Logout hone par login page redirect karenge) */}
+            {/* 🔒 Protected Buyer & User Routes */}
             <Route
               path="/home"
               element={
@@ -57,14 +64,6 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <BuyerDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/cart"
-              element={
-                <ProtectedRoute>
-                  <Cart />
                 </ProtectedRoute>
               }
             />
@@ -97,6 +96,8 @@ export default function App() {
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>
+
+        {/* Global Footer & AI Bot */}
         <Footer />
         <AIAssistant />
       </div>

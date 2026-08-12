@@ -4,13 +4,12 @@ import {
   Menu,
   X,
   User,
-  ArrowRight,
   ShieldCheck,
   LogOut,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import {CartContext} from "../context/cartContext";
+import { CartContext } from "../context/cartContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,7 +38,7 @@ export default function Navbar() {
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-8 font-medium text-slate-600 text-sm">
             <Link
-              to="/"
+              to="/marketplace"
               className="text-slate-900 font-semibold hover:text-indigo-600 transition"
             >
               Marketplace
@@ -60,25 +59,39 @@ export default function Navbar() {
             >
               <ShieldCheck size={16} /> Supplier Portal
             </Link>
-            <Link to="/cart" className="relative text-slate-600 hover:text-indigo-600 p-2 transition">
-              <ShoppingBag size={20} />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+
+            {/* 🔒 CART ICON: Sirf tabhi dikhega jab user Logged In hoga */}
+            {user && (
+              <Link
+                to="/cart"
+                className="relative text-slate-600 hover:text-indigo-600 p-2 transition"
+                title="View Cart"
+              >
+                <ShoppingBag size={20} />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
           </div>
 
-          {/* Action Button */}
+          {/* Action Buttons (Right Side) */}
           {user ? (
-            <div>
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 text-slate-700 hover:text-indigo-600 px-3 py-2 text-sm font-semibold transition"
+              >
+                <User size={18} /> {user.name || "Profile"}
+              </Link>
               <button
                 onClick={logout}
-                className="text-slate-400 hover:text-red-400 p-2 transition"
+                className="flex items-center gap-1.5 text-slate-500 hover:text-red-500 hover:bg-rose-50 px-3 py-2 rounded-xl text-sm font-semibold transition"
                 title="Logout"
               >
-                <LogOut size={16} />
+                <LogOut size={16} /> Logout
               </button>
             </div>
           ) : (
@@ -93,13 +106,25 @@ export default function Navbar() {
                 to="/register"
                 className="bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:shadow-indigo-200 transition duration-200"
               >
-                sign up
+                Sign Up
               </Link>
             </div>
           )}
 
           {/* Mobile Hamburger Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            {/* Mobile me bhi Cart icon tabhi dikhega jab logged in ho */}
+            {user && (
+              <Link to="/cart" className="relative text-slate-600 p-2">
+                <ShoppingBag size={22} />
+                {totalItems > 0 && (
+                  <span className="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
+
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-slate-600 p-2 focus:outline-none"
@@ -113,31 +138,80 @@ export default function Navbar() {
       {/* Mobile Drawer */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-slate-100 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
-          <Link to="/" className="block text-slate-800 font-semibold py-1">
+          <Link
+            to="/marketplace"
+            onClick={() => setIsOpen(false)}
+            className="block text-slate-800 font-semibold py-1"
+          >
             Marketplace
           </Link>
-          <a href="#categories" className="block text-slate-600 py-1">
+          <a
+            href="#categories"
+            onClick={() => setIsOpen(false)}
+            className="block text-slate-600 py-1"
+          >
             Categories
           </a>
           <Link
             to="/supplier-dashboard"
+            onClick={() => setIsOpen(false)}
             className="block text-indigo-600 font-semibold py-1"
           >
             Supplier Portal
           </Link>
+
+          {/* Mobile Drawer - Conditional Cart Link */}
+          {user && (
+            <Link
+              to="/cart"
+              onClick={() => setIsOpen(false)}
+              className="block text-slate-700 font-semibold py-1 flex items-center justify-between"
+            >
+              <span>Shopping Cart</span>
+              <span className="bg-indigo-100 text-indigo-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                {totalItems} Items
+              </span>
+            </Link>
+          )}
+
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-            <Link
-              to="/login"
-              className="w-full text-center py-2.5 text-slate-700 font-semibold rounded-xl border"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/register"
-              className="w-full text-center py-2.5 bg-indigo-600 text-white font-semibold rounded-xl"
-            >
-              Get Started
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center py-2.5 text-slate-700 font-semibold rounded-xl border flex items-center justify-center gap-2"
+                >
+                  <User size={18} /> My Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-center py-2.5 bg-rose-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} /> Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center py-2.5 text-slate-700 font-semibold rounded-xl border"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center py-2.5 bg-indigo-600 text-white font-semibold rounded-xl"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

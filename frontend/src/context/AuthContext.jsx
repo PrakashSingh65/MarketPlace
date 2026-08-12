@@ -1,15 +1,17 @@
-import { createContext, useState, useEffect} from'react';
+import { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
-export const AuthProvider= ({children}) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token') || '');
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
 
-     useEffect(() => {
+  useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser && token) {
       setUser(JSON.parse(savedUser));
+    } else {
+      setUser(null);
     }
   }, [token]);
 
@@ -25,6 +27,7 @@ export const AuthProvider= ({children}) => {
     setToken('');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('cart'); // Cart clear for extra safety
   };
 
   return (

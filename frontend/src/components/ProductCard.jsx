@@ -1,8 +1,9 @@
 import React, { useContext } from 'react';
 import { ShoppingCart, Send } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/cartContext'; // 👈 1. CartContext Import Kiya
 
-//  Export Category Colors (Fixes marketplace.jsx import error)
+// Export Category Colors
 export const categoryColors = {
   Cotton: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   Silk: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -15,6 +16,7 @@ export const categoryColors = {
 
 export default function ProductCard({ product, onInquiry }) {
   const { token } = useContext(AuthContext);
+  const { addToCart } = useContext(CartContext); // 👈 2. Context se addToCart function nikala
   const apiUrl = import.meta.env.VITE_API_URL || '';
   const authToken = token || localStorage.getItem('token');
 
@@ -33,53 +35,50 @@ export default function ProductCard({ product, onInquiry }) {
     return colorMap[c?.toLowerCase()] || '#94a3b8';
   };
 
-  // Add to Cart Handler (API + LocalStorage Fallback)
+  // 🛒 Add to Cart Handler (Updated with React Context Support)
   const handleAddToCart = async (e) => {
     e.stopPropagation();
 
-    const token = localStorage.getItem('token');
     const productId = product._id || product.id;
 
-    // LocalStorage Sync Helper Function
-    const syncLocalCart = () => {
+    // ⚡ STEP A: Pehle Context State update karein taaki UI/Badge + Cart Page instant update ho jaye
+    if (addToCart) {
+      addToCart(product);
+    } else {
+      // Fallback in case context function na mile
       const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      const existingIndex = currentCart.findIndex((item) => (item._id || item.id) === productId);
+      const existingIndex = currentCart.findIndex(
+        (item) => (item._id || item.id) === productId
+      );
 
       if (existingIndex > -1) {
-        currentCart[existingIndex].quantity = (currentCart[existingIndex].quantity || 1) + 1;
+        currentCart[existingIndex].quantity =
+          (currentCart[existingIndex].quantity || 1) + 1;
       } else {
         currentCart.push({ ...product, quantity: 1 });
       }
 
       localStorage.setItem('cart', JSON.stringify(currentCart));
-    };
+    }
 
+    // ⚡ STEP B: Backend Sync (If API Endpoint available)
     try {
-      const res = await fetch(`${apiUrl}/api/cart/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
-        },
-        body: JSON.stringify({
-          productId: productId,
-          quantity: 1,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        syncLocalCart();
-        alert('Product Cart me add ho gaya hai! 🛒');
-      } else {
-        // Fallback agar backend protect router ya authentication reject kare
-        syncLocalCart();
-        alert('Product Local Cart me save ho gaya!');
+      if (authToken) {
+        await fetch(`${apiUrl}/api/cart/add`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            productId: productId,
+            quantity: 1,
+          }),
+        });
       }
+      alert('Product Cart me add ho gaya hai! 🛒');
     } catch (err) {
-      console.error('API Error:', err);
-      syncLocalCart();
+      console.error('API Sync Warning:', err);
       alert('Product Local Cart me add ho gaya hai!');
     }
   };

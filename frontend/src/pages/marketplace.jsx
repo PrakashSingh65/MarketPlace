@@ -1,246 +1,161 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, Package, ChevronDown } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import ProductCard from '../components/ProductCard';
-import SkeletonCard from '../components/SkeletonCard';
-import InquiryModal from '../components/InquiryModal';
-
-const CATEGORIES = ['Cotton', 'Silk', 'Polyester', 'Wool', 'Linen', 'Denim'];
+import React, { useState, useEffect, useContext } from 'react';
+import { ShoppingBag, Search, Filter, CheckCircle2 } from 'lucide-react';
+import { CartContext } from '../context/cartContext';
 
 export default function Marketplace() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { user, token } = useContext(AuthContext);
-
-  const initialCategory = searchParams.get('category') || 'All';
-  
+  const { addToCart } = useContext(CartContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'price-asc' | 'price-desc'
+  // 🔔 Custom Notification State
+  const [showNotification, setShowNotification] = useState(false);
 
-  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-
+  // Fetch Products from Backend / Mock Data
   useEffect(() => {
-    // Sync category with URL
-    const newParams = new URLSearchParams(searchParams);
-    if (selectedCategory !== 'All') {
-      newParams.set('category', selectedCategory);
-    } else {
-      newParams.delete('category');
-    }
-    setSearchParams(newParams, { replace: true });
-  }, [selectedCategory, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    let debounceTimer;
-
     const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const queryParams = new URLSearchParams();
-        
-        if (selectedCategory !== 'All') queryParams.append('category', selectedCategory);
-        if (searchTerm) queryParams.append('search', searchTerm);
-        if (minPrice) queryParams.append('minPrice', minPrice);
-        if (maxPrice) queryParams.append('maxPrice', maxPrice);
-
-        const response = await fetch(`${baseUrl}/products?${queryParams.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch products');
-        
-        const data = await response.json();
-        setProducts(data);
+        const res = await fetch('/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data.products || data);
+        }
       } catch (err) {
-        setError(err.message);
+        console.error('Failed to fetch products:', err);
       } finally {
         setLoading(false);
       }
     };
+    fetchProducts();
+  }, []);
 
-    debounceTimer = setTimeout(() => {
-      fetchProducts();
-    }, 300);
+  // 🛒 Handle Add To Cart with Custom Notification
+  const handleAddToCart = (product) => {
+    addToCart(product);
 
-    return () => clearTimeout(debounceTimer);
-  }, [searchTerm, selectedCategory, minPrice, maxPrice]);
+    // Show Custom Popup
+    setShowNotification(true);
 
-  const sortedProducts = useMemo(() => {
-    const productsCopy = [...products];
-    switch (sortBy) {
-      case 'price-asc':
-        return productsCopy.sort((a, b) => a.pricePerMeter - b.pricePerMeter);
-      case 'price-desc':
-        return productsCopy.sort((a, b) => b.pricePerMeter - a.pricePerMeter);
-      case 'newest':
-      default:
-        return productsCopy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
-  }, [products, sortBy]);
-
-  const handleInquiry = (product) => {
-    setSelectedProduct(product);
-    setIsInquiryOpen(true);
+    // 2 second baad automatically hide ho jayega
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 2000);
   };
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('All');
-    setMinPrice('');
-    setMaxPrice('');
-    setSortBy('newest');
-  };
+  // Categories Filter
+  const categories = ['All', 'Cotton', 'Silk', 'Polyester', 'Wool', 'Linen', 'Denim'];
+
+  // Filter Products
+  const filteredProducts = products.filter((p) => {
+    const matchesCategory =
+      selectedCategory === 'All' || p.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesSearch =
+      p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 animate-fade-in">
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Textile Marketplace</h1>
-        <p className="text-lg text-slate-500 mt-2">Browse wholesale fabrics from top suppliers.</p>
-        <p className="text-sm font-medium text-indigo-600 mt-1">{products.length} {products.length === 1 ? 'result' : 'results'}</p>
-      </header>
+    <div className="min-h-screen bg-slate-950 text-white py-8 px-4 sm:px-6 lg:px-8 relative">
+      
+      {/* 🔔 Clean Modern Popup (No 'localhost' text) */}
+      {showNotification && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-sm font-semibold px-6 py-3 rounded-2xl border border-indigo-500/50 shadow-2xl flex items-center gap-3 animate-bounce">
+          <CheckCircle2 size={18} className="text-emerald-400" />
+          <span>Product add ho gya</span>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-6 mb-8">
-        {/* Search Bar */}
-        <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400" />
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Top Header & Search */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Fabric Marketplace</h1>
+            <p className="text-slate-400 text-sm mt-1">Browse and order premium textile materials</p>
           </div>
-          <input
-            type="text"
-            className="block w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-shadow text-slate-900 placeholder-slate-400 outline-none"
-            placeholder="Search fabrics, materials, suppliers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+
+          {/* Search Box */}
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3.5 top-3 text-slate-500" size={18} />
+            <input
+              type="text"
+              placeholder="Search fabrics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+            />
+          </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
-          
-          {/* Categories */}
-          <div className="flex overflow-x-auto pb-2 lg:pb-0 gap-2 hide-scrollbar">
+        {/* Categories Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {categories.map((cat) => (
             <button
-              onClick={() => setSelectedCategory('All')}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === 'All' 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                selectedCategory === cat
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
               }`}
             >
-              All
+              {cat}
             </button>
-            {CATEGORIES.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category 
-                    ? 'bg-indigo-600 text-white shadow-md' 
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Price Range */}
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="Min ₹"
-                className="w-24 px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-indigo-600 outline-none transition-shadow"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-              />
-              <span className="text-slate-400">-</span>
-              <input
-                type="number"
-                placeholder="Max ₹"
-                className="w-24 px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm text-sm focus:ring-2 focus:ring-indigo-600 outline-none transition-shadow"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-            </div>
-
-            {/* Sort */}
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-white border border-slate-200 rounded-lg py-2 pl-4 pr-10 shadow-sm text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-600 outline-none transition-shadow cursor-pointer"
-              >
-                <option value="newest">Newest Arrivals</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
+          ))}
         </div>
+
+        {/* Product Cards Grid */}
+        {loading ? (
+          <div className="text-center py-20 text-slate-500 text-sm">Loading fabrics...</div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 text-slate-500 text-sm">No products found.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => {
+              const image = (product.images && product.images[0]) || product.image || 'https://via.placeholder.com/300';
+              
+              return (
+                <div
+                  key={product._id || product.id}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between group"
+                >
+                  <div className="relative aspect-square bg-slate-950 overflow-hidden">
+                    <img
+                      src={image}
+                      alt={product.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                    <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-800">
+                      {product.category || 'Fabric'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-white text-base line-clamp-1">{product.title}</h3>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                        {product.description || 'High quality material.'}
+                      </p>
+                      <p className="text-emerald-400 font-bold text-lg mt-2">
+                        ₹{product.price} <span className="text-xs text-slate-400 font-normal">/meter</span>
+                      </p>
+                    </div>
+
+                    {/* Add to Cart Button */}
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-indigo-600/20 cursor-pointer"
+                    >
+                      <ShoppingBag size={16} /> Add to Cart
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="p-4 mb-8 bg-red-50 text-red-600 rounded-xl border border-red-100">
-          Error loading products: {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      ) : sortedProducts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedProducts.map((product) => (
-            <ProductCard 
-              key={product._id} 
-              product={product} 
-              onInquiry={() => handleInquiry(product)} 
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-2xl border border-slate-200 shadow-sm animate-slide-up">
-          <div className="bg-indigo-50 p-4 rounded-full mb-4">
-            <Package className="h-12 w-12 text-indigo-400" />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">No products found</h3>
-          <p className="text-slate-500 mb-6 max-w-md">Try adjusting your filters or search term to find what you're looking for.</p>
-          <button 
-            onClick={clearFilters}
-            className="px-6 py-2.5 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-medium hover:bg-indigo-50 transition-colors shadow-sm"
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
-
-      <InquiryModal 
-        isOpen={isInquiryOpen} 
-        onClose={() => setIsInquiryOpen(false)} 
-        product={selectedProduct} 
-      />
-      
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }

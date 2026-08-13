@@ -5,16 +5,32 @@ export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
-  const { token } = useContext(AuthContext);
+  const { token, logout } = useContext(AuthContext) || {};
 
   // Initial Load from LocalStorage or Backend
   useEffect(() => {
     const fetchCart = async () => {
-      if (token) {
+      const localData = JSON.parse(localStorage.getItem('cart') || '[]');
+
+      // Token check
+      if (token && token !== 'undefined' && token !== 'null') {
         try {
           const res = await fetch('/api/cart', {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
           });
+
+          // If Token is Expired / Invalid (401 or 403)
+          if (res.status === 401 || res.status === 403) {
+            // Bad token ko clean karein taaki retry loop ruk jaye
+            localStorage.removeItem('token');
+            if (logout) logout();
+            setCartItems(localData);
+            return;
+          }
+
           const data = await res.json();
           if (res.ok && data.cart) {
             const items = data.cart.items.map((item) => ({
@@ -23,15 +39,17 @@ export const CartProvider = ({ children }) => {
               quantity: item.quantity,
             }));
             setCartItems(items);
+          } else {
+            setCartItems(localData);
           }
         } catch (err) {
-          console.error('Cart Fetch Error:', err);
+          setCartItems(localData);
         }
       } else {
-        const localData = JSON.parse(localStorage.getItem('cart') || '[]');
         setCartItems(localData);
       }
     };
+
     fetchCart();
   }, [token]);
 
@@ -40,7 +58,6 @@ export const CartProvider = ({ children }) => {
     try {
       const pId = product._id || product.id;
 
-      // 1. Local State Update (Instant UI feedback)
       setCartItems((prevItems) => {
         const existingIndex = prevItems.findIndex(
           (item) => (item._id || item.id) === pId
@@ -59,8 +76,7 @@ export const CartProvider = ({ children }) => {
         return updated;
       });
 
-      // 2. Backend API Sync (if logged in)
-      if (token) {
+      if (token && token !== 'undefined') {
         await fetch('/api/cart/add', {
           method: 'POST',
           headers: {
@@ -75,25 +91,22 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // 🗑️ REMOVE FROM CART FUNCTION (Item Delete / Minus Logic)
+  // 🗑️ REMOVE FROM CART FUNCTION
   const removeFromCart = async (productId, isFullRemove = false) => {
     const targetId =
       typeof productId === 'object'
         ? productId._id || productId.id
         : productId;
 
-    // 1. Local State + LocalStorage Update
     setCartItems((prevItems) => {
       const updated = prevItems.reduce((acc, item) => {
         const currentId =
           item._id || item.id || item.productId?._id || item.productId;
 
         if (currentId === targetId) {
-          // Garbage / Trash icon press karne par YA jab qty <= 1 ho
           if (isFullRemove || (item.quantity || 1) <= 1) {
-            return acc; // Product drop ho jayega (Delete)
+            return acc;
           }
-          // Minus (-) click karne par quantity 1 kam karega
           return [...acc, { ...item, quantity: item.quantity - 1 }];
         }
 
@@ -104,8 +117,7 @@ export const CartProvider = ({ children }) => {
       return updated;
     });
 
-    // 2. Backend Sync (Optional API Call if needed)
-    if (token) {
+    if (token && token !== 'undefined') {
       try {
         await fetch(`/api/cart/remove/${targetId}`, {
           method: 'DELETE',
@@ -123,7 +135,6 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('cart');
   };
 
-  // Total Quantity Counter for Navbar Badge
   const totalItems = cartItems.reduce(
     (sum, item) => sum + (item.quantity || 1),
     0

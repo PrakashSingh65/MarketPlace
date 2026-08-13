@@ -1,141 +1,144 @@
-import { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { ShoppingBag, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext'; // Apne AuthContext path ke hisaab se check karein
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const { login, user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext) || {}; // Context fallback
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  useEffect(() => {
-    if (user) {
-      if (user.role === 'SUPPLIER') {
-        navigate('/supplier-dashboard');
-      } else {
-        navigate('/marketplace');
-      }
-    }
-  }, [user, navigate]);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || 'Invalid email or password');
       }
 
-      login(data.user, data.token);
+      // Save Token & User Data in LocalStorage
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      }
 
-      if (data.user.role === 'SUPPLIER') {
+      // Sync with Context if available
+      if (login) {
+        login(data.token, data.user);
+      }
+
+      // Redirect based on user role or default to marketplace/home
+      if (data.user?.role === 'SUPPLIER') {
         navigate('/supplier-dashboard');
       } else {
         navigate('/marketplace');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred during login');
+      console.error('Login Error:', err);
+      setError(err.message || 'Connection failed. Please check backend server.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 animate-fade-in">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-indigo-200">
-            <ShoppingBag className="w-8 h-8 text-white" />
+    <div className="min-h-[85vh] flex items-center justify-center bg-slate-950 px-4 py-12">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        {/* Header Icon */}
+        <div className="flex justify-center mb-4">
+          <div className="w-14 h-14 bg-indigo-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/30 text-indigo-400">
+            <Lock size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h1>
-          <p className="text-slate-500">Sign in to your TexMarket account</p>
         </div>
 
+        <h2 className="text-2xl font-bold text-center text-white mb-1">Welcome Back</h2>
+        <p className="text-xs text-slate-400 text-center mb-6">
+          Sign in to your TexMarket account
+        </p>
+
+        {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 rounded-xl flex items-start gap-3 animate-fade-in border border-red-100">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl text-center">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="email">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Email Address
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-slate-400" />
-              </div>
+              <Mail className="absolute left-3.5 top-3 text-slate-500" size={18} />
               <input
-                id="email"
                 type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 placeholder="you@example.com"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               />
             </div>
           </div>
 
+          {/* Password Input */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="password">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Password
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-slate-400" />
-              </div>
+              <Lock className="absolute left-3.5 top-3 text-slate-500" size={18} />
               <input
-                id="password"
                 type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 placeholder="••••••••"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-3 text-slate-500 hover:text-slate-300"
               >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-                ) : (
-                  <Eye className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:brightness-110 text-white rounded-xl font-medium shadow-md shadow-indigo-200 transition-all disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-2"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-semibold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
           >
-            {isLoading ? (
+            {loading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Signing in...
+                <Loader2 size={18} className="animate-spin" /> Signing In...
               </>
             ) : (
               'Sign In'
@@ -143,9 +146,9 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-slate-600">
+        <p className="text-xs text-center text-slate-400 mt-6">
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+          <Link to="/register" className="text-indigo-400 hover:underline font-semibold">
             Create account
           </Link>
         </p>

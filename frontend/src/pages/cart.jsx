@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, ShoppingBag, ArrowLeft, Plus, Minus } from 'lucide-react';
-import { CartContext } from '../context/cartContext';
+import { CartContext } from '../context/CartContext';
 
 export default function Cart() {
   const { cartItems, addToCart, removeFromCart, clearCart } = useContext(CartContext);

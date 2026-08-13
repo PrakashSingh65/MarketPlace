@@ -6,7 +6,7 @@ import {
   Check, Layers, Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
-import { CartContext } from '../context/cartContext';
+import { CartContext } from '../context/CartContext';
 
 export default function ProductDetail() {
   const { id } = useParams();

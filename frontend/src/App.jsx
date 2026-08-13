@@ -14,7 +14,7 @@ import AIAssistant from './components/AIAssistant';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
-import { CartProvider } from './context/cartContext';
+import { CartProvider } from './context/CartContext';
 import Cart from './pages/cart';
 import Checkout from './pages/Checkout';
 import BuyerDashboard from './pages/BuyerDashboard';

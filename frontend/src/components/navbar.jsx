@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, LogOut, ShieldCheck } from 'lucide-react';
-import { CartContext } from '../context/cartContext';
+import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext'; // Agar AuthContext configured hai
 
 export default function Navbar() {

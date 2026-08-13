@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { ShoppingCart, Send } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { CartContext } from '../context/cartContext'; // 👈 1. CartContext Import Kiya
+import { CartContext } from '../context/CartContext'; // 👈 1. CartContext Import Kiya
 
 // Export Category Colors
 export const categoryColors = {

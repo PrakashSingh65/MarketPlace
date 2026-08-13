@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -20,6 +20,9 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function Home() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   // Categories Bar Data
   const categories = [
     { name: 'For You', icon: ShoppingBag, active: true },
@@ -35,13 +38,29 @@ export default function Home() {
     { name: '2 Wheelers', icon: Bike },
   ];
 
-  // Best Deals Products
-  const furnitureDeals = [
-    { id: 1, title: 'Shoe Racks', price: 'From ₹499', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400' },
-    { id: 2, title: 'Laptop Tables', price: 'From ₹299', image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400' },
-    { id: 3, title: 'Storage Cabinets', price: 'From ₹799', image: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=400' },
-    { id: 4, title: 'Wooden Temples', price: 'From ₹1,299', image: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=400' },
-  ];
+  // 🔄 Fetch Products from Backend API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data.products || data);
+        }
+      } catch (error) {
+        console.error("Products fetch error:", error);
+      } flex: {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Filter deals for Best Deals section from backend response
+  const furnitureDeals = products.filter(
+    (p) => p.category?.toLowerCase() === 'furniture' || p.category?.toLowerCase() === 'cotton'
+  ).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 pb-12">
@@ -88,9 +107,9 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-5">
-              <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
+              <Link to="/login" className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
                 <User size={18} /> Login <ChevronDown size={14} />
-              </button>
+              </Link>
               <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
                 More <ChevronDown size={14} />
               </button>
@@ -133,8 +152,6 @@ export default function Home() {
 
         {/* 3. PROMO BANNERS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          
-          {/* Banner 1 */}
           <div className="bg-gradient-to-r from-sky-100 to-indigo-100 rounded-2xl p-5 border border-sky-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
             <div>
               <span className="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Freedom Sale</span>
@@ -144,7 +161,6 @@ export default function Home() {
             <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300" alt="Phone" className="w-24 h-32 object-cover rounded-lg shadow-md rotate-6" />
           </div>
 
-          {/* Banner 2 */}
           <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl p-5 border border-purple-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
             <div>
               <span className="bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Sale is Live</span>
@@ -154,7 +170,6 @@ export default function Home() {
             <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300" alt="Vivo Phone" className="w-24 h-32 object-cover rounded-lg shadow-md -rotate-3" />
           </div>
 
-          {/* Banner 3 */}
           <div className="bg-gradient-to-r from-amber-100 to-orange-100 rounded-2xl p-5 border border-amber-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
             <div>
               <span className="bg-amber-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Exclusive</span>
@@ -163,42 +178,46 @@ export default function Home() {
             </div>
             <img src="https://images.unsplash.com/photo-1593784991095-a205069470b6?w=300" alt="Smart TV" className="w-28 h-28 object-cover rounded-lg shadow-md" />
           </div>
-
         </div>
 
-        {/* 4. BEST DEALS CAROUSEL SECTION */}
+        {/* 4. BEST DEALS CAROUSEL SECTION (Dynamic Backend Data) */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
           
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              Best Deals on Furniture
+              Best Deals on Marketplace
             </h2>
-            <button className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
+            <Link to="/marketplace" className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
               <ArrowRight size={16} />
-            </button>
+            </Link>
           </div>
 
           {/* Product Items Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {furnitureDeals.map((item) => (
-              <div 
-                key={item.id} 
-                className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col justify-between group cursor-pointer"
-              >
-                <div className="aspect-square bg-slate-50 rounded-lg overflow-hidden mb-3">
-                  <img 
-                    src={item.image} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
-                </div>
-                <div className="text-center">
-                  <h4 className="font-semibold text-slate-800 text-sm line-clamp-1">{item.title}</h4>
-                  <p className="text-emerald-600 font-bold text-xs mt-1">{item.price}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-10 text-slate-500 font-medium">Loading products from server...</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {(furnitureDeals.length > 0 ? furnitureDeals : products.slice(0, 4)).map((item) => (
+                <Link 
+                  to={`/product/${item._id || item.id}`} 
+                  key={item._id || item.id} 
+                  className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col justify-between group cursor-pointer"
+                >
+                  <div className="aspect-square bg-slate-50 rounded-lg overflow-hidden mb-3">
+                    <img 
+                      src={item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400'} 
+                      alt={item.title || item.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <h4 className="font-semibold text-slate-800 text-sm line-clamp-1">{item.title || item.name}</h4>
+                    <p className="text-emerald-600 font-bold text-xs mt-1">₹{item.price}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
         </div>
 

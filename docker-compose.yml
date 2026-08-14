@@ -11,7 +11,7 @@ services:
       - mongo-data:/data/db
 
   backend:
-    build: ./backend
+    build: ./Backend
     container_name: texmarket_backend
     restart: always
     ports:
@@ -24,7 +24,7 @@ services:
       - mongodb
 
   frontend:
-    build: .
+    build: ./frontend
     container_name: texmarket_frontend
     restart: always
     ports:

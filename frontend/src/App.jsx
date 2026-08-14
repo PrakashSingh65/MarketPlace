@@ -31,6 +31,7 @@ export default function App() {
           <Routes>
             {/* 🌐 Public Routes */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
@@ -51,14 +52,6 @@ export default function App() {
             />
 
             {/* 🔒 Protected Buyer & User Routes */}
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/buyer-dashboard"
               element={

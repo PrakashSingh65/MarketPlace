@@ -7,7 +7,7 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -29,12 +29,12 @@ export default function Login() {
       const authToken = res.data.token;
       const userData = res.data.user || res.data;
 
-      if (authToken) {
-        // Global Auth State aur LocalStorage me save karein
+      if (authToken && userData) {
         login(userData, authToken);
 
-        // Role-based Redirect
-        if (userData.role === 'SUPPLIER') {
+        // Role-based distinct redirection
+        const role = userData.role?.toUpperCase();
+        if (role === 'SUPPLIER') {
           navigate('/supplier-dashboard');
         } else {
           navigate('/buyer-dashboard');
@@ -52,7 +52,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-md space-y-4">
         <h2 className="text-2xl font-bold text-white text-center">Login</h2>
-        
+
         {errorMsg && (
           <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded-lg text-xs text-center">
             {errorMsg}

@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // App load hone par localStorage se session recover karein
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
@@ -17,7 +16,6 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (e) {
-        console.error("Failed to parse user session", e);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
@@ -32,16 +30,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
+  // 👈 YAHAN ADD KAREIN (LOGOUT FUNCTION)
   const logout = () => {
     setUser(null);
     setToken(null);
+    
+    // LocalStorage se User session aur Cart dono remove honge
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('cart');
+
+    // Clean state ke saath login page par redirect
+    window.location.href = '/login';
   };
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

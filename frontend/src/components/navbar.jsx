@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogOut, User, ShoppingCart } from 'lucide-react';
+import { LogOut, ShoppingCart, LayoutDashboard } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -11,6 +11,8 @@ export default function Navbar() {
     logout();
     navigate('/login');
   };
+
+  const isSupplier = user?.role?.toUpperCase() === 'SUPPLIER';
 
   return (
     <nav className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between text-white">
@@ -26,9 +28,20 @@ export default function Navbar() {
 
         {user ? (
           <div className="flex items-center gap-4">
-            <span className="text-xs bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-indigo-300">
-              {user.name || user.email} ({user.role || 'USER'})
+            {/* Dashboard Link Based on Role */}
+            <Link
+              to={isSupplier ? "/supplier-dashboard" : "/buyer-dashboard"}
+              className="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-indigo-600 hover:text-white transition"
+            >
+              <LayoutDashboard size={14} />
+              {isSupplier ? "Supplier Panel" : "Buyer Panel"}
+            </Link>
+
+            <span className="text-xs text-slate-400">
+              {user.name || user.email}
             </span>
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1"

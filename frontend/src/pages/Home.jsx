@@ -15,17 +15,22 @@ import {
   Dumbbell,
   Armchair,
   BookOpen,
-  Bike
+  Bike,
+  X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // 🔍 Search & Category States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('For You');
 
   // Categories Bar Data
   const categories = [
-    { name: 'For You', icon: ShoppingBag, active: true },
+    { name: 'For You', icon: ShoppingBag },
     { name: 'Fashion', icon: Shirt },
     { name: 'Mobiles', icon: Smartphone },
     { name: 'Electronics', icon: Tv },
@@ -38,7 +43,7 @@ export default function Home() {
     { name: '2 Wheelers', icon: Bike },
   ];
 
-  // 🔄 Fetch Products from Backend API
+  // Fetch Products from Backend API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -49,7 +54,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Products fetch error:", error);
-      } flex: {
+      } finally {
         setLoading(false);
       }
     };
@@ -57,10 +62,18 @@ export default function Home() {
     fetchProducts();
   }, []);
 
-  // Filter deals for Best Deals section from backend response
-  const furnitureDeals = products.filter(
-    (p) => p.category?.toLowerCase() === 'furniture' || p.category?.toLowerCase() === 'cotton'
-  ).slice(0, 4);
+  // 🎯 Live Filter Logic (Search Query + Category)
+  const filteredProducts = products.filter((product) => {
+    const titleMatch = (product.title || product.name || '')
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    
+    const categoryMatch =
+      selectedCategory === 'For You' ||
+      (product.category || '').toLowerCase() === selectedCategory.toLowerCase();
+
+    return titleMatch && categoryMatch;
+  });
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 pb-12">
@@ -86,14 +99,24 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar with Clear Button */}
           <div className="relative w-full md:max-w-2xl">
             <Search className="absolute left-3.5 top-2.5 text-slate-400" size={18} />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for Products, Brands and More"
-              className="w-full bg-sky-50/50 border border-sky-200 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+              className="w-full bg-sky-50/50 border border-sky-200 rounded-lg pl-10 pr-10 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
 
           {/* Location & Right Actions */}
@@ -129,19 +152,21 @@ export default function Home() {
           <div className="flex items-center justify-between min-w-max gap-4 sm:gap-6 px-2">
             {categories.map((cat, idx) => {
               const Icon = cat.icon;
+              const isActive = selectedCategory === cat.name;
               return (
                 <button
                   key={idx}
+                  onClick={() => setSelectedCategory(cat.name)}
                   className={`flex flex-col items-center gap-1.5 group transition cursor-pointer ${
-                    cat.active ? 'border-b-2 border-indigo-600 pb-1' : ''
+                    isActive ? 'border-b-2 border-indigo-600 pb-1' : ''
                   }`}
                 >
                   <div className={`p-2 rounded-xl transition ${
-                    cat.active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600 group-hover:bg-slate-100 group-hover:text-indigo-600'
+                    isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600 group-hover:bg-slate-100 group-hover:text-indigo-600'
                   }`}>
                     <Icon size={20} />
                   </div>
-                  <span className={`text-[11px] font-medium ${cat.active ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
+                  <span className={`text-[11px] font-medium ${isActive ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
                     {cat.name}
                   </span>
                 </button>
@@ -150,54 +175,60 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 3. PROMO BANNERS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-r from-sky-100 to-indigo-100 rounded-2xl p-5 border border-sky-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
-            <div>
-              <span className="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Freedom Sale</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">NOTHING (R)</h3>
-              <p className="text-sm font-bold text-slate-700">Phone (2a) <br/><span className="text-base text-indigo-700">From ₹23,999*</span></p>
+        {/* 3. PROMO BANNERS GRID (Search Na Hone Par Hi Dikhayein) */}
+        {!searchQuery && selectedCategory === 'For You' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-r from-sky-100 to-indigo-100 rounded-2xl p-5 border border-sky-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+              <div>
+                <span className="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Freedom Sale</span>
+                <h3 className="text-xl font-black text-slate-900 mt-2">NOTHING (R)</h3>
+                <p className="text-sm font-bold text-slate-700">Phone (2a) <br/><span className="text-base text-indigo-700">From ₹23,999*</span></p>
+              </div>
+              <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300" alt="Phone" className="w-24 h-32 object-cover rounded-lg shadow-md rotate-6" />
             </div>
-            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300" alt="Phone" className="w-24 h-32 object-cover rounded-lg shadow-md rotate-6" />
-          </div>
 
-          <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl p-5 border border-purple-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
-            <div>
-              <span className="bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Sale is Live</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">vivo T3 5G</h3>
-              <p className="text-sm font-bold text-slate-700">44W Fast Charge <br/><span className="text-base text-purple-700">Just ₹15,999*</span></p>
+            <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl p-5 border border-purple-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+              <div>
+                <span className="bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Sale is Live</span>
+                <h3 className="text-xl font-black text-slate-900 mt-2">vivo T3 5G</h3>
+                <p className="text-sm font-bold text-slate-700">44W Fast Charge <br/><span className="text-base text-purple-700">Just ₹15,999*</span></p>
+              </div>
+              <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300" alt="Vivo Phone" className="w-24 h-32 object-cover rounded-lg shadow-md -rotate-3" />
             </div>
-            <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300" alt="Vivo Phone" className="w-24 h-32 object-cover rounded-lg shadow-md -rotate-3" />
-          </div>
 
-          <div className="bg-gradient-to-r from-amber-100 to-orange-100 rounded-2xl p-5 border border-amber-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
-            <div>
-              <span className="bg-amber-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Exclusive</span>
-              <h3 className="text-xl font-black text-slate-900 mt-2">Smart TVs</h3>
-              <p className="text-sm font-bold text-slate-700">4K Ultra HD <br/><span className="text-base text-amber-800">Just ₹9,119*</span></p>
+            <div className="bg-gradient-to-r from-amber-100 to-orange-100 rounded-2xl p-5 border border-amber-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+              <div>
+                <span className="bg-amber-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Exclusive</span>
+                <h3 className="text-xl font-black text-slate-900 mt-2">Smart TVs</h3>
+                <p className="text-sm font-bold text-slate-700">4K Ultra HD <br/><span className="text-base text-amber-800">Just ₹9,119*</span></p>
+              </div>
+              <img src="https://images.unsplash.com/photo-1593784991095-a205069470b6?w=300" alt="Smart TV" className="w-28 h-28 object-cover rounded-lg shadow-md" />
             </div>
-            <img src="https://images.unsplash.com/photo-1593784991095-a205069470b6?w=300" alt="Smart TV" className="w-28 h-28 object-cover rounded-lg shadow-md" />
           </div>
-        </div>
+        )}
 
-        {/* 4. BEST DEALS CAROUSEL SECTION (Dynamic Backend Data) */}
+        {/* 4. DYNAMIC PRODUCTS DISPLAY SECTION */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
           
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              Best Deals on Marketplace
+              {searchQuery 
+                ? `Search Results for "${searchQuery}"` 
+                : selectedCategory === 'For You' 
+                  ? 'Best Deals on Marketplace' 
+                  : `${selectedCategory} Products`}
             </h2>
             <Link to="/marketplace" className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
               <ArrowRight size={16} />
             </Link>
           </div>
 
-          {/* Product Items Cards */}
+          {/* Product Cards Grid */}
           {loading ? (
-            <div className="text-center py-10 text-slate-500 font-medium">Loading products from server...</div>
-          ) : (
+            <div className="text-center py-10 text-slate-500 font-medium">Loading products...</div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              {(furnitureDeals.length > 0 ? furnitureDeals : products.slice(0, 4)).map((item) => (
+              {filteredProducts.map((item) => (
                 <Link 
                   to={`/product/${item._id || item.id}`} 
                   key={item._id || item.id} 
@@ -216,6 +247,16 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl p-8 text-center border border-slate-200">
+              <p className="text-slate-600 font-medium">Koi product nahi mila!</p>
+              <button 
+                onClick={() => { setSearchQuery(''); setSelectedCategory('For You'); }}
+                className="mt-3 text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+              >
+                Reset Search & Filters
+              </button>
             </div>
           )}
 

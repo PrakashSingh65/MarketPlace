@@ -1,103 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
-  const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const endpoint = isSignup ? '/api/auth/register' : '/api/auth/login';
-    const payload = isSignup ? { name, email, password } : { email, password };
+    setErrorMsg('');
+    setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const res = await axios.post('http://localhost:5000/api/auth/login', {
+        email: formData.email.trim(),
+        password: formData.password
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        alert(isSignup ? 'Registration successful!' : 'Login successful!');
-        navigate('/');
-      } else {
-        alert(data.message || 'Authentication failed');
+      const authToken = res.data.token;
+      const userData = res.data.user || res.data;
+
+      if (authToken) {
+        // Global Auth State aur LocalStorage me save karein
+        login(userData, authToken);
+
+        // Role-based Redirect
+        if (userData.role === 'SUPPLIER') {
+          navigate('/supplier-dashboard');
+        } else {
+          navigate('/buyer-dashboard');
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert('Backend server error');
+      console.error("Login Error:", err.response?.data);
+      setErrorMsg(err.response?.data?.message || 'Invalid Email or Password');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 w-full max-w-md">
-        <h2 className="text-2xl font-black text-slate-900 text-center mb-2">
-          {isSignup ? 'Create Account' : 'Welcome Back'}
-        </h2>
-        <p className="text-xs text-slate-500 text-center mb-6">TexMarket Portal</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignup && (
-            <div>
-              <label className="text-xs font-bold text-slate-700">Full Name</label>
-              <input 
-                type="text" 
-                required 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                className="w-full mt-1 p-2.5 border rounded-lg text-sm bg-slate-50 focus:bg-white"
-                placeholder="Enter your name"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs font-bold text-slate-700">Email Address</label>
-            <input 
-              type="email" 
-              required 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 p-2.5 border rounded-lg text-sm bg-slate-50 focus:bg-white"
-              placeholder="name@example.com"
-            />
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-md space-y-4">
+        <h2 className="text-2xl font-bold text-white text-center">Login</h2>
+        
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded-lg text-xs text-center">
+            {errorMsg}
           </div>
+        )}
 
-          <div>
-            <label className="text-xs font-bold text-slate-700">Password</label>
-            <input 
-              type="password" 
-              required 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 p-2.5 border rounded-lg text-sm bg-slate-50 focus:bg-white"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition text-sm"
-          >
-            {isSignup ? 'Sign Up' : 'Log In'}
-          </button>
-        </form>
-
-        <div className="text-center mt-4">
-          <button 
-            onClick={() => setIsSignup(!isSignup)} 
-            className="text-xs text-indigo-600 font-semibold hover:underline"
-          >
-            {isSignup ? 'Already have an account? Log In' : "Don't have an account? Sign Up"}
-          </button>
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Email</label>
+          <input
+            type="email"
+            name="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="user@example.com"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          />
         </div>
-      </div>
+
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Password</label>
+          <input
+            type="password"
+            name="password"
+            required
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition text-sm disabled:opacity-50"
+        >
+          {loading ? 'Logging in...' : 'Sign In'}
+        </button>
+      </form>
     </div>
   );
 }

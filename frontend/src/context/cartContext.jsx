@@ -24,7 +24,6 @@ export const CartProvider = ({ children }) => {
 
           // If Token is Expired / Invalid (401 or 403)
           if (res.status === 401 || res.status === 403) {
-            // Bad token ko clean karein taaki retry loop ruk jaye
             localStorage.removeItem('token');
             if (logout) logout();
             setCartItems(localData);
@@ -51,7 +50,7 @@ export const CartProvider = ({ children }) => {
     };
 
     fetchCart();
-  }, [token]);
+  }, [token, logout]);
 
   // ➕ ADD TO CART FUNCTION
   const addToCart = async (product) => {
@@ -155,3 +154,6 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
+
+// 💡 Custom hook export (Easy import ke liye)
+export const useCart = () => useContext(CartContext);

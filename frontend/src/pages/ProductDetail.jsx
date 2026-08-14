@@ -3,20 +3,26 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   ArrowLeft, ShoppingCart, ShieldCheck, Truck, Sparkles, 
-  Check, Layers, Package, Tag, Palette 
+  Layers, Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
-import { CartContext } from '../context/CartContext';
+import { CartContext, useCart } from '../context/CartContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useContext(CartContext);
+  
+  // CartContext support (Direct Context or useCart Hook fallback)
+  const cartCtx = useContext(CartContext);
+  const cartHook = useCart ? useCart() : null;
+  const addToCart = cartCtx?.addToCart || cartHook?.addToCart;
+
   const [product, setProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
-  const [quantity, setQuantity] = useState(100); // Default order quantity
+  const [quantity, setQuantity] = useState(100);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [added, setAdded] = useState(false);
 
   // Default color options if backend doesn't provide them
   const availableColors = ['#1E293B', '#2563EB', '#059669', '#DC2626', '#D97706'];
@@ -36,6 +42,7 @@ export default function ProductDetail() {
           category: 'Cotton',
           description: 'High-grade, breathable 100% organic combed cotton suitable for apparel, home textiles, and custom garments. Features vibrant color fastness, soft hand-feel, and exceptional durability.',
           pricePerMeter: 280,
+          price: 280,
           minOrderQty: 50,
           stockAvailable: 12500,
           specifications: {
@@ -50,6 +57,16 @@ export default function ProductDetail() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleAddToCart = () => {
+    if (addToCart) {
+      addToCart(product, quantity);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } else {
+      alert('Cart Service unavailable');
+    }
+  };
 
   if (loading) {
     return (
@@ -74,21 +91,21 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-4">
         
-        {/* 1. PRODUCT IMAGES & GALLERY*/}
+        {/* 1. PRODUCT IMAGES & GALLERY */}
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden aspect-square relative shadow-2xl flex items-center justify-center group">
             <img 
               src={product.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800'} 
-              alt={product.title}
+              alt={product.title || product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md border border-slate-800 text-indigo-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              {product.category}
+              {product.category || 'Fabric'}
             </div>
           </div>
         </div>
 
-        {/*2. PRODUCT INFORMATION & BUYER EVALUATION*/}
+        {/* 2. PRODUCT INFORMATION & BUYER EVALUATION */}
         <div className="space-y-6">
           
           {/* Header & Category */}
@@ -96,7 +113,7 @@ export default function ProductDetail() {
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">
               <Tag size={14} /> Verified Supplier Item
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{product.title}</h1>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{product.title || product.name}</h1>
             <p className="text-slate-400 text-xs sm:text-sm mt-3 leading-relaxed">{product.description}</p>
           </div>
 
@@ -105,7 +122,7 @@ export default function ProductDetail() {
             <div>
               <span className="text-[11px] text-slate-400 font-medium block">Wholesale Price</span>
               <div className="text-2xl font-extrabold text-emerald-400 mt-1">
-                ₹{product.pricePerMeter} <span className="text-xs text-slate-400 font-normal">/ meter</span>
+                ₹{product.pricePerMeter || product.price} <span className="text-xs text-slate-400 font-normal">/ meter</span>
               </div>
             </div>
             <div>
@@ -160,13 +177,14 @@ export default function ProductDetail() {
           <div className="pt-4 space-y-3">
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  addToCart(product, quantity);
-                  alert('Product added to cart!');
-                }}
-                className="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white py-3.5 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2"
+                onClick={handleAddToCart}
+                className={`flex-1 border py-3.5 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2 ${
+                  added 
+                    ? 'bg-emerald-600 border-emerald-500 text-white' 
+                    : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-white'
+                }`}
               >
-                <ShoppingCart size={16} /> Add to Cart
+                <ShoppingCart size={16} /> {added ? 'Added to Cart!' : 'Add to Cart'}
               </button>
 
               <button
@@ -187,11 +205,13 @@ export default function ProductDetail() {
       </div>
 
       {/* Inquiry Modal */}
-      <InquiryModal
-        product={product}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      {InquiryModal && (
+        <InquiryModal
+          product={product}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

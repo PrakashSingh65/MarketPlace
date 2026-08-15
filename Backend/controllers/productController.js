@@ -1,107 +1,100 @@
-import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 
+// Get All Products (Filter & Search query options included)
 export const getProducts = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.json([]);
+    const { category, subCategory, keyword } = req.query;
+
+    let query = {};
+
+    if (category) {
+      query.category = category.toLowerCase();
+    }
+    if (subCategory) {
+      query.subCategory = subCategory;
+    }
+    if (keyword) {
+      query.title = { $regex: keyword, $options: 'i' };
     }
 
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.json(products);
+    const products = await Product.find(query).sort({ createdAt: -1 });
+    res.status(200).json(products);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Failed to fetch products' });
+    res.status(500).json({ message: 'Error fetching products', error: error.message });
   }
 };
 
+// Get Single Product by ID
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+    if (product) {
+      res.status(200).json(product);
+    } else {
+      res.status(404).json({ message: 'Product not found' });
     }
-
-    res.json(product);
   } catch (error) {
-    console.error('Error fetching product:', error);
-    res.status(500).json({ message: 'Failed to fetch product' });
+    res.status(500).json({ message: 'Error fetching product', error: error.message });
   }
 };
 
+// Add New Product
 export const addProduct = async (req, res) => {
   try {
     const {
       title,
       description,
       category,
+      subCategory,
       price,
       pricePerMeter,
       moq,
-      stockMeters,
       stock,
+      stockMeters,
       gsm,
       composition,
       colors,
-      isAvailable,
     } = req.body;
 
-    if (!title || !category) {
-      return res.status(400).json({ message: 'Title and category are required' });
-    }
+    // Multer / Cloudinary se mili image URL
+    const imageUrl = req.file ? req.file.path : '';
 
-    const productData = {
+    const newProduct = new Product({
       title,
       description,
-      category,
-      price: price ? Number(price) : undefined,
-      pricePerMeter: pricePerMeter ? Number(pricePerMeter) : undefined,
-      moq: moq ? Number(moq) : 50,
-      stockMeters: stockMeters ? Number(stockMeters) : 50,
-      stock: stock ? Number(stock) : 50,
+      category: category ? category.toLowerCase() : 'fashion',
+      subCategory,
+      price: Number(price || pricePerMeter || 0),
+      pricePerMeter: Number(pricePerMeter || price || 0),
+      moq: Number(moq || 50),
+      stock: Number(stock || stockMeters || 50),
+      stockMeters: Number(stockMeters || stock || 50),
       gsm: gsm ? Number(gsm) : undefined,
       composition,
-      colors: Array.isArray(colors)
-        ? colors
-        : colors
-            ? colors.split(',').map((item) => item.trim()).filter(Boolean)
-            : [],
-      isAvailable: isAvailable === 'false' ? false : true,
-    };
+      colors: Array.isArray(colors) ? colors : colors ? colors.split(',').map((c) => c.trim()) : [],
+      image: imageUrl,
+      images: imageUrl ? [imageUrl] : [],
+    });
 
-    if (req.file) {
-      productData.images = [
-        `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
-      ];
-    }
-
-    const product = await Product.create(productData);
-    res.status(201).json(product);
+    const savedProduct = await newProduct.save();
+    res.status(201).json(savedProduct);
   } catch (error) {
-    console.error('Error creating product:', error);
-    res.status(500).json({ message: 'Failed to create product' });
+    res.status(400).json({ message: 'Error adding product', error: error.message });
   }
 };
 
+// Delete Product
 export const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
 
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+    if (product) {
+      await product.deleteOne();
+      res.status(200).json({ message: 'Product removed successfully' });
+    } else {
+      res.status(404).json({ message: 'Product not found' });
     }
-
-    res.json({ message: 'Product deleted successfully' });
   } catch (error) {
-    console.error('Error deleting product:', error);
-    res.status(500).json({ message: 'Failed to delete product' });
+    res.status(500).json({ message: 'Error deleting product', error: error.message });
   }
-};
-
-export default {
-  getProducts,
-  getProductById,
-  addProduct,
-  deleteProduct,
 };

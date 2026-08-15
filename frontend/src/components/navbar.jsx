@@ -1,63 +1,89 @@
-import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { LogOut, ShoppingCart, LayoutDashboard } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Navbar() {
-  const { user, logout } = useContext(AuthContext);
+const CATEGORY_MAP = {
+  Fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
+  Mobiles: ["iPhone", "Vivo", "OPPO", "POCO", "Redmi", "Samsung", "realme"],
+  Electronics: ["Laptops", "Headphones", "Smartwatches", "Monitors"],
+  Beauty: ["Skincare", "Makeup", "Haircare"],
+  Home: ["Furniture", "Decor", "Kitchen"],
+  Appliances: ["TVs", "Refrigerators", "Washing Machines"],
+  Toys: ["Action Figures", "Board Games"],
+  "Food & Health": ["Snacks", "Beverages"],
+  Auto: ["Car Accessories", "Bike Accessories"],
+  "2 Wheelers": ["Electric Scooters", "Bikes"]
+};
+
+export default function CategoryHeader() {
+  const [activeCategory, setActiveCategory] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleSubCategoryClick = (category, subCategory) => {
+    setActiveCategory(null);
+    navigate(`/products?category=${category.toLowerCase()}&subCategory=${encodeURIComponent(subCategory)}`);
   };
 
-  const isSupplier = user?.role?.toUpperCase() === 'SUPPLIER';
-
   return (
-    <nav className="bg-slate-900 border-b border-slate-800 py-3 px-6 flex items-center justify-between text-white">
-      <Link to="/" className="text-xl font-bold text-indigo-400">
-        Marketplace
-      </Link>
+    <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
+      
+      {/* Category List Bar */}
+      <div style={{ display: 'flex', gap: '24px', padding: '12px 24px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <button 
+          onClick={() => navigate('/products')}
+          style={{ border: 'none', background: 'none', fontWeight: 'bold', cursor: 'pointer', color: '#1e293b' }}
+        >
+          For You
+        </button>
 
-      <div className="flex items-center gap-6 text-sm font-medium">
-        <Link to="/marketplace" className="hover:text-indigo-400 transition">Marketplace</Link>
-        <Link to="/cart" className="hover:text-indigo-400 transition flex items-center gap-1">
-          <ShoppingCart size={16} /> Cart
-        </Link>
-
-        {user ? (
-          <div className="flex items-center gap-4">
-            {/* Dashboard Link Based on Role */}
-            <Link
-              to={isSupplier ? "/supplier-dashboard" : "/buyer-dashboard"}
-              className="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-indigo-600 hover:text-white transition"
-            >
-              <LayoutDashboard size={14} />
-              {isSupplier ? "Supplier Panel" : "Buyer Panel"}
-            </Link>
-
-            <span className="text-xs text-slate-400">
-              {user.name || user.email}
+        {Object.keys(CATEGORY_MAP).map((cat) => (
+          <div
+            key={cat}
+            onMouseEnter={() => setActiveCategory(cat)}
+            onMouseLeave={() => setActiveCategory(null)}
+            style={{ position: 'relative', cursor: 'pointer', paddingBottom: '4px' }}
+          >
+            <span style={{ fontSize: '14px', color: activeCategory === cat ? '#2563eb' : '#334155', fontWeight: '500' }}>
+              {cat}
             </span>
 
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1"
-            >
-              <LogOut size={14} /> Logout
-            </button>
+            {/* Sub-Category Hover Dropdown Menu */}
+            {activeCategory === cat && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '0',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0px 10px 25px rgba(0,0,0,0.15)',
+                  borderRadius: '8px',
+                  padding: '8px 0',
+                  minWidth: '180px',
+                  zIndex: 1000,
+                  border: '1px solid #e2e8f0'
+                }}
+              >
+                {CATEGORY_MAP[cat].map((sub) => (
+                  <div
+                    key={sub}
+                    onClick={() => handleSubCategoryClick(cat, sub)}
+                    style={{
+                      padding: '10px 16px',
+                      fontSize: '13px',
+                      color: '#1e293b',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f1f5f9')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    {sub}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="hover:text-indigo-400 transition">Login</Link>
-            <Link to="/register" className="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-xs font-bold transition">
-              Register
-            </Link>
-          </div>
-        )}
+        ))}
       </div>
-    </nav>
+    </div>
   );
 }

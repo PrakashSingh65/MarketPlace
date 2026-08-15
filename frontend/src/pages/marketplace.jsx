@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { ShoppingBag, Search, Filter, CheckCircle2 } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
+import CategoryNav from '../components/CategoryNav';
 
 export default function Marketplace() {
   const { addToCart } = useContext(CartContext);

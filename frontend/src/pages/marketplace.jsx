@@ -24,7 +24,7 @@ export default function Marketplace() {
         }
       } catch (err) {
         console.error('Failed to fetch products:', err);
-      } font-normal {
+      } finally {
         setLoading(false);
       }
     };
@@ -89,7 +89,7 @@ export default function Marketplace() {
           </div>
         </div>
 
-        {/* 🌟 Top Flipkart-Style Category Navigation Bar */}
+        {/* 🌟 Top Category Navigation Bar */}
         <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
           <CategoryNav onSelectCategory={(catId) => setSelectedCategory(catId)} />
         </div>

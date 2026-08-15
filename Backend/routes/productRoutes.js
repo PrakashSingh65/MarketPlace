@@ -10,11 +10,37 @@ import Product from '../models/Product.js';
 
 const router = express.Router();
 
+// 1. Get All Products (Filter Query params supported: /api/products?category=fashion&subCategory=Men's Wear)
 router.get('/', getProducts);
+
+// 2. Fetch Products by Category directly
+router.get('/category/:categoryName', async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const { subCategory } = req.query;
+
+    const query = { category: categoryName.toLowerCase() };
+    if (subCategory) {
+      query.subCategory = subCategory;
+    }
+
+    const products = await Product.find(query).sort({ createdAt: -1 });
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 3. Get Single Product
 router.get('/:id', getProductById);
+
+// 4. Add Product with Multer Image Upload
 router.post('/', upload.single('image'), addProduct);
+
+// 5. Delete Product
 router.delete('/:id', deleteProduct);
 
+// 6. Add Review to Product
 router.post('/:id/reviews', async (req, res) => {
   try {
     const { rating, comment, name } = req.body;

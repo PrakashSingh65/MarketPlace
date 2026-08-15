@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 
-// Categories aur unki Sub-Categories Ka Mapping Structure
+// Marketplace categories aur unki Sub-Categories ka structure
 const CATEGORY_MAP = {
-  mobiles: ['iPhone', 'Vivo', 'OPPO', 'POCO', 'Redmi', 'Samsung', 'realme', 'Nothing', 'Google', 'Motorola'],
-  fashion: ["Men's Wear", "Women's Wear", "Kids Wear", 'Footwear'],
-  electronics: ['Laptops', 'Headphones', 'Smartwatches', 'Monitors'],
-  beauty: ['Skincare', 'Makeup', 'Haircare'],
-  home: ['Furniture', 'Decor', 'Kitchen'],
-  appliances: ['TVs', 'Refrigerators', 'Washing Machines'],
-  toys: ['Action Figures', 'Board Games'],
-  food: ['Snacks', 'Beverages'],
-  auto: ['Car Accessories', 'Bike Accessories'],
-  sports: ['Fitness Gear', 'Outdoor Sports'],
-  furniture: ['Living Room', 'Bedroom'],
-  books: ['Fiction', 'Non-Fiction'],
-  '2wheelers': ['Electric Scooters', 'Bikes']
+  fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
+  mobiles: ["iPhone", "Vivo", "OPPO", "POCO", "Redmi", "Samsung", "realme", "Nothing", "Google", "Motorola"],
+  electronics: ["Laptops", "Headphones", "Smartwatches", "Monitors"],
+  beauty: ["Skincare", "Makeup", "Haircare"],
+  home: ["Furniture", "Decor", "Kitchen"],
+  appliances: ["TVs", "Refrigerators", "Washing Machines"],
+  toys: ["Action Figures", "Board Games"],
+  food: ["Snacks", "Beverages"],
+  auto: ["Car Accessories", "Bike Accessories"],
+  sports: ["Fitness Gear", "Outdoor Sports"],
+  furniture: ["Living Room", "Bedroom"],
+  books: ["Fiction", "Non-Fiction"],
+  "2wheelers": ["Electric Scooters", "Bikes"]
 };
 
 export default function SupplierDashboard() {
@@ -22,11 +22,11 @@ export default function SupplierDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form State
+  // Form Fields State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('mobiles');
-  const [subCategory, setSubCategory] = useState(CATEGORY_MAP['mobiles'][0] || '');
+  const [category, setCategory] = useState('fashion');
+  const [subCategory, setSubCategory] = useState(CATEGORY_MAP['fashion'][0] || '');
   const [price, setPrice] = useState('');
   const [moq, setMoq] = useState('50');
   const [stock, setStock] = useState('50');
@@ -42,7 +42,7 @@ export default function SupplierDashboard() {
     fetchProducts();
   }, []);
 
-  // Category change hone par Sub-Category update karne ke liye
+  // Category Change Event - SubCategory update karne ke liye
   const handleCategoryChange = (e) => {
     const selectedCat = e.target.value;
     setCategory(selectedCat);
@@ -73,8 +73,8 @@ export default function SupplierDashboard() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setCategory('mobiles');
-    setSubCategory(CATEGORY_MAP['mobiles'][0] || '');
+    setCategory('fashion');
+    setSubCategory(CATEGORY_MAP['fashion'][0] || '');
     setPrice('');
     setMoq('50');
     setStock('50');
@@ -85,6 +85,7 @@ export default function SupplierDashboard() {
     setImagePreview(null);
   };
 
+  // Product Submission to Backend API
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -100,6 +101,7 @@ export default function SupplierDashboard() {
       formData.append('moq', moq);
       formData.append('stock', stock);
       formData.append('stockMeters', stock);
+      
       if (gsm) formData.append('gsm', gsm);
       if (composition) formData.append('composition', composition);
       if (colors) {
@@ -136,7 +138,7 @@ export default function SupplierDashboard() {
   return (
     <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
 
-      {/* Top Header & ADD BUTTON */}
+      {/* Header & Modal Toggle Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
@@ -159,7 +161,7 @@ export default function SupplierDashboard() {
         </button>
       </div>
 
-      {/* PRODUCTS DISPLAY GRID */}
+      {/* Active Products List */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
         <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
 
@@ -187,11 +189,6 @@ export default function SupplierDashboard() {
                     </span>
                   )}
                 </div>
-                {p.description && (
-                  <p style={{ color: '#64748b', fontSize: '11px', margin: '2px 0' }}>
-                    {p.description.length > 60 ? `${p.description.slice(0, 60)}...` : p.description}
-                  </p>
-                )}
                 <p style={{ color: '#818cf8', fontSize: '11px' }}>
                   ₹{p.pricePerMeter ?? p.price}
                 </p>
@@ -201,7 +198,7 @@ export default function SupplierDashboard() {
         )}
       </div>
 
-      {/* POPUP UPLOAD MODAL */}
+      {/* Upload Modal */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',
@@ -216,7 +213,7 @@ export default function SupplierDashboard() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* IMAGE INPUT & PREVIEW */}
+              {/* Image Input */}
               <div style={{ border: '2px dashed #334155', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
                 <input type="file" accept="image/*" required onChange={handleImageChange} />
                 {imagePreview && (
@@ -231,7 +228,7 @@ export default function SupplierDashboard() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. iPhone 15 Pro / Cotton Blue Shirt"
+                  placeholder="e.g. Denim Jacket / iPhone 15"
                   style={inputStyle}
                 />
               </div>
@@ -247,7 +244,7 @@ export default function SupplierDashboard() {
                 />
               </div>
 
-              {/* CATEGORY & SUBCATEGORY DROPDOWNS */}
+              {/* Dynamic Category & Sub-Category Selection */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Category</label>
@@ -270,7 +267,6 @@ export default function SupplierDashboard() {
                     value={subCategory}
                     onChange={(e) => setSubCategory(e.target.value)}
                     style={inputStyle}
-                    disabled={!CATEGORY_MAP[category] || CATEGORY_MAP[category].length === 0}
                   >
                     {(CATEGORY_MAP[category] || []).map((sub) => (
                       <option key={sub} value={sub}>{sub}</option>
@@ -287,7 +283,7 @@ export default function SupplierDashboard() {
                     required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="999"
+                    placeholder="499"
                     style={inputStyle}
                   />
                 </div>
@@ -308,7 +304,7 @@ export default function SupplierDashboard() {
                 disabled={submitting}
                 style={{ backgroundColor: '#4f46e5', color: '#fff', padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
               >
-                {submitting ? 'Uploading...' : 'Upload Product'}
+                {submitting ? 'Uploading Product...' : 'Upload Product'}
               </button>
             </form>
           </div>

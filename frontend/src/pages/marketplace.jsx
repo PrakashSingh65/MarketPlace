@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { ShoppingBag, Search, Filter, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Search, CheckCircle2 } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import CategoryNav from '../components/CategoryNav';
 
@@ -7,7 +7,7 @@ export default function Marketplace() {
   const { addToCart } = useContext(CartContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('for-you');
   const [searchQuery, setSearchQuery] = useState('');
   
   // 🔔 Custom Notification State
@@ -24,7 +24,7 @@ export default function Marketplace() {
         }
       } catch (err) {
         console.error('Failed to fetch products:', err);
-      } finally {
+      } font-normal {
         setLoading(false);
       }
     };
@@ -44,23 +44,23 @@ export default function Marketplace() {
     }, 2000);
   };
 
-  // Categories Filter
-  const categories = ['All', 'Cotton', 'Silk', 'Polyester', 'Wool', 'Linen', 'Denim'];
-
-  // Filter Products
+  // Filter Products based on search query & selected category nav item
   const filteredProducts = products.filter((p) => {
     const matchesCategory =
-      selectedCategory === 'All' || p.category?.toLowerCase() === selectedCategory.toLowerCase();
+      selectedCategory === 'for-you' ||
+      p.category?.toLowerCase().includes(selectedCategory.toLowerCase());
+    
     const matchesSearch =
       p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white py-8 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-slate-950 text-white py-6 px-4 sm:px-6 lg:px-8 relative">
       
-      {/* 🔔 Clean Modern Popup (No 'localhost' text) */}
+      {/* 🔔 Clean Modern Popup */}
       {showNotification && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white text-sm font-semibold px-6 py-3 rounded-2xl border border-indigo-500/50 shadow-2xl flex items-center gap-3 animate-bounce">
           <CheckCircle2 size={18} className="text-emerald-400" />
@@ -68,7 +68,7 @@ export default function Marketplace() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Top Header & Search */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
@@ -89,21 +89,9 @@ export default function Marketplace() {
           </div>
         </div>
 
-        {/* Categories Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* 🌟 Top Flipkart-Style Category Navigation Bar */}
+        <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+          <CategoryNav onSelectCategory={(catId) => setSelectedCategory(catId)} />
         </div>
 
         {/* Product Cards Grid */}
@@ -112,7 +100,7 @@ export default function Marketplace() {
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20 text-slate-500 text-sm">No products found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
             {filteredProducts.map((product) => {
               const image = (product.images && product.images[0]) || product.image || 'https://via.placeholder.com/300';
               

@@ -1,21 +1,38 @@
 import { useState, useEffect } from 'react';
 
-const CATEGORY_OPTIONS = ['Cotton', 'Silk', 'Polyester', 'Wool', 'Linen', 'Denim'];
+// Categories aur unki Sub-Categories Ka Mapping Structure
+const CATEGORY_MAP = {
+  mobiles: ['iPhone', 'Vivo', 'OPPO', 'POCO', 'Redmi', 'Samsung', 'realme', 'Nothing', 'Google', 'Motorola'],
+  fashion: ["Men's Wear", "Women's Wear", "Kids Wear", 'Footwear'],
+  electronics: ['Laptops', 'Headphones', 'Smartwatches', 'Monitors'],
+  beauty: ['Skincare', 'Makeup', 'Haircare'],
+  home: ['Furniture', 'Decor', 'Kitchen'],
+  appliances: ['TVs', 'Refrigerators', 'Washing Machines'],
+  toys: ['Action Figures', 'Board Games'],
+  food: ['Snacks', 'Beverages'],
+  auto: ['Car Accessories', 'Bike Accessories'],
+  sports: ['Fitness Gear', 'Outdoor Sports'],
+  furniture: ['Living Room', 'Bedroom'],
+  books: ['Fiction', 'Non-Fiction'],
+  '2wheelers': ['Electric Scooters', 'Bikes']
+};
 
 export default function SupplierDashboard() {
   const [products, setProducts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Cotton');
+  const [category, setCategory] = useState('mobiles');
+  const [subCategory, setSubCategory] = useState(CATEGORY_MAP['mobiles'][0] || '');
   const [price, setPrice] = useState('');
   const [moq, setMoq] = useState('50');
   const [stock, setStock] = useState('50');
   const [gsm, setGsm] = useState('');
   const [composition, setComposition] = useState('');
-  const [colors, setColors] = useState(''); // comma-separated input
+  const [colors, setColors] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -24,6 +41,14 @@ export default function SupplierDashboard() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Category change hone par Sub-Category update karne ke liye
+  const handleCategoryChange = (e) => {
+    const selectedCat = e.target.value;
+    setCategory(selectedCat);
+    const subList = CATEGORY_MAP[selectedCat] || [];
+    setSubCategory(subList.length > 0 ? subList[0] : '');
+  };
 
   const fetchProducts = async () => {
     try {
@@ -48,7 +73,8 @@ export default function SupplierDashboard() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setCategory('Cotton');
+    setCategory('mobiles');
+    setSubCategory(CATEGORY_MAP['mobiles'][0] || '');
     setPrice('');
     setMoq('50');
     setStock('50');
@@ -68,11 +94,10 @@ export default function SupplierDashboard() {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('category', category);
-      // Send both keys so either schema field (price / pricePerMeter) is populated
+      formData.append('subCategory', subCategory);
       formData.append('price', price);
       formData.append('pricePerMeter', price);
       formData.append('moq', moq);
-      // Send both keys so either schema field (stock / stockMeters) is populated
       formData.append('stock', stock);
       formData.append('stockMeters', stock);
       if (gsm) formData.append('gsm', gsm);
@@ -118,7 +143,6 @@ export default function SupplierDashboard() {
           <p style={{ color: '#94a3b8', fontSize: '12px' }}>Manage your catalog and uploads</p>
         </div>
 
-        {/* ADD FABRIC BUTTON */}
         <button
           onClick={() => setIsModalOpen(true)}
           style={{
@@ -131,17 +155,17 @@ export default function SupplierDashboard() {
             cursor: 'pointer'
           }}
         >
-          + Add New Fabric
+          + Add New Product
         </button>
       </div>
 
       {/* PRODUCTS DISPLAY GRID */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
-        <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Fabric Products ({products.length})</h3>
+        <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
 
         {products.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', padding: '20px' }}>
-            No products added yet. Click "+ Add New Fabric" button above.
+            No products added yet. Click "+ Add New Product" button above.
           </p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
@@ -153,32 +177,24 @@ export default function SupplierDashboard() {
                   style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
                 />
                 <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>{p.title}</p>
+                <div style={{ display: 'flex', gap: '4px', margin: '4px 0' }}>
+                  <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                    {p.category}
+                  </span>
+                  {p.subCategory && (
+                    <span style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px' }}>
+                      {p.subCategory}
+                    </span>
+                  )}
+                </div>
                 {p.description && (
                   <p style={{ color: '#64748b', fontSize: '11px', margin: '2px 0' }}>
                     {p.description.length > 60 ? `${p.description.slice(0, 60)}...` : p.description}
                   </p>
                 )}
                 <p style={{ color: '#818cf8', fontSize: '11px' }}>
-                  ₹{p.pricePerMeter ?? p.price} / meter
+                  ₹{p.pricePerMeter ?? p.price}
                 </p>
-                <p style={{ color: '#64748b', fontSize: '10px' }}>
-                  MOQ: {p.moq ?? 50}m &middot; Stock: {p.stockMeters ?? p.stock ?? 50}m
-                </p>
-                {p.gsm && (
-                  <p style={{ color: '#64748b', fontSize: '10px' }}>GSM: {p.gsm}</p>
-                )}
-                {p.composition && (
-                  <p style={{ color: '#64748b', fontSize: '10px' }}>Composition: {p.composition}</p>
-                )}
-                {Array.isArray(p.colors) && p.colors.length > 0 && (
-                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px' }}>
-                    {p.colors.map((c, i) => (
-                      <span key={i} style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#cbd5e1', padding: '2px 6px', borderRadius: '999px' }}>
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -194,7 +210,7 @@ export default function SupplierDashboard() {
         }}>
           <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '380px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontWeight: 'bold', fontSize: '14px' }}>Upload Fabric</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '14px' }}>Upload Product</h3>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>✕</button>
             </div>
 
@@ -209,13 +225,13 @@ export default function SupplierDashboard() {
               </div>
 
               <div>
-                <label style={labelStyle}>Fabric Title</label>
+                <label style={labelStyle}>Product Title</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Pure Cotton"
+                  placeholder="e.g. iPhone 15 Pro / Cotton Blue Shirt"
                   style={inputStyle}
                 />
               </div>
@@ -225,62 +241,58 @@ export default function SupplierDashboard() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Short description of the fabric"
+                  placeholder="Short description of the product"
                   rows={2}
                   style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </div>
 
-              <div>
-                <label style={labelStyle}>Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  style={inputStyle}
-                >
-                  {CATEGORY_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+              {/* CATEGORY & SUBCATEGORY DROPDOWNS */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Category</label>
+                  <select
+                    value={category}
+                    onChange={handleCategoryChange}
+                    style={inputStyle}
+                  >
+                    {Object.keys(CATEGORY_MAP).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Sub-Category</label>
+                  <select
+                    value={subCategory}
+                    onChange={(e) => setSubCategory(e.target.value)}
+                    style={inputStyle}
+                    disabled={!CATEGORY_MAP[category] || CATEGORY_MAP[category].length === 0}
+                  >
+                    {(CATEGORY_MAP[category] || []).map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Price per Meter (₹)</label>
+                  <label style={labelStyle}>Price (₹)</label>
                   <input
                     type="number"
                     required
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="250"
+                    placeholder="999"
                     style={inputStyle}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>GSM</label>
-                  <input
-                    type="number"
-                    value={gsm}
-                    onChange={(e) => setGsm(e.target.value)}
-                    placeholder="180"
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>MOQ (meters)</label>
-                  <input
-                    type="number"
-                    value={moq}
-                    onChange={(e) => setMoq(e.target.value)}
-                    placeholder="50"
-                    style={inputStyle}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Stock (meters)</label>
+                  <label style={labelStyle}>Stock</label>
                   <input
                     type="number"
                     value={stock}
@@ -291,34 +303,12 @@ export default function SupplierDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label style={labelStyle}>Composition</label>
-                <input
-                  type="text"
-                  value={composition}
-                  onChange={(e) => setComposition(e.target.value)}
-                  placeholder="e.g. 100% Cotton"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div>
-                <label style={labelStyle}>Colors (comma separated)</label>
-                <input
-                  type="text"
-                  value={colors}
-                  onChange={(e) => setColors(e.target.value)}
-                  placeholder="e.g. Red, Navy, White"
-                  style={inputStyle}
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={submitting}
                 style={{ backgroundColor: '#4f46e5', color: '#fff', padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
               >
-                {submitting ? 'Uploading to Cloudinary...' : 'Upload Product'}
+                {submitting ? 'Uploading...' : 'Upload Product'}
               </button>
             </form>
           </div>

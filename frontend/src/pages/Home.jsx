@@ -18,17 +18,36 @@ import {
   Bike,
   X
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+// Sub-categories Mapping
+const CATEGORY_MAP = {
+  Fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
+  Mobiles: ["iPhone", "Vivo", "OPPO", "POCO", "Redmi", "Samsung", "realme"],
+  Electronics: ["Laptops", "Headphones", "Smartwatches", "Monitors"],
+  Beauty: ["Skincare", "Makeup", "Haircare"],
+  Home: ["Furniture", "Decor", "Kitchen"],
+  Appliances: ["TVs", "Refrigerators", "Washing Machines"],
+  Sports: ["Fitness", "Outdoor Games", "Gym Gear"],
+  Furniture: ["Beds", "Sofas", "Tables"],
+  Books: ["Fiction", "Non-Fiction", "Academic"],
+  "2 Wheelers": ["Electric Scooters", "Bikes"]
+};
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🔍 Search & Category States
+  // 🔍 Search, Category & Hover States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('For You');
+  const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  // Categories Bar Data
+  const navigate = useNavigate();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const categories = [
     { name: 'For You', icon: ShoppingBag },
     { name: 'Fashion', icon: Shirt },
@@ -43,14 +62,19 @@ export default function Home() {
     { name: '2 Wheelers', icon: Bike },
   ];
 
-  // Fetch Products from Backend API
+  // Auth & Products Load
   useEffect(() => {
+    const storedUser = localStorage.getItem('userInfo');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
     const fetchProducts = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/products');
+        const res = await fetch(`${apiUrl}/api/products`);
         if (res.ok) {
           const data = await res.json();
-          setProducts(data.products || data);
+          setProducts(Array.isArray(data) ? data : data.products || []);
         }
       } catch (error) {
         console.error("Products fetch error:", error);
@@ -60,9 +84,24 @@ export default function Home() {
     };
 
     fetchProducts();
-  }, []);
+  }, [apiUrl]);
 
-  // 🎯 Live Filter Logic (Search Query + Category)
+  // Handle SubCategory Click
+  const handleSubCategoryClick = (category, sub) => {
+    setHoveredCategory(null);
+    navigate(`/products?category=${category.toLowerCase()}&subCategory=${encodeURIComponent(sub)}`);
+  };
+
+  // Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
+    setUser(null);
+    setIsUserMenuOpen(false);
+    navigate('/login');
+  };
+
+  // Live Filter Logic
   const filteredProducts = products.filter((product) => {
     const titleMatch = (product.title || product.name || '')
       .toLowerCase()
@@ -82,24 +121,15 @@ export default function Home() {
       <header className="bg-white sticky top-0 z-50 border-b border-slate-200 shadow-sm px-4 lg:px-8 py-2.5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
           
-          {/* Logo & Switcher */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-            <div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
-              <button className="bg-yellow-400 font-bold text-slate-900 px-4 py-1.5 rounded-full text-xs shadow-sm flex items-center gap-1">
-                <span>🛒</span> TexMarket
-              </button>
-              <button className="text-slate-600 font-medium px-4 py-1.5 rounded-full text-xs hover:bg-slate-200 transition flex items-center gap-1">
-                ✈️ Travel
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 text-xs text-slate-500 md:hidden">
-              <MapPin size={14} className="text-slate-700" />
-              <span>Select location</span>
-            </div>
+            <Link to="/" className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
+              <span className="bg-yellow-400 font-bold text-slate-900 px-4 py-1.5 rounded-full text-xs shadow-sm flex items-center gap-1">
+                🛒 TexMarket
+              </span>
+            </Link>
           </div>
 
-          {/* Search Bar with Clear Button */}
+          {/* Search Bar */}
           <div className="relative w-full md:max-w-2xl">
             <Search className="absolute left-3.5 top-2.5 text-slate-400" size={18} />
             <input
@@ -119,27 +149,36 @@ export default function Home() {
             )}
           </div>
 
-          {/* Location & Right Actions */}
+          {/* User Auth & Actions */}
           <div className="hidden lg:flex items-center gap-6">
-            <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
-              <MapPin size={14} className="text-slate-800" />
-              <span>Location not set</span>
-              <button className="text-blue-600 font-semibold hover:underline ml-1">
-                Select delivery location &gt;
-              </button>
-            </div>
+            {user ? (
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsUserMenuOpen(true)}
+                onMouseLeave={() => setIsUserMenuOpen(false)}
+              >
+                <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 px-3 py-1.5 rounded-lg">
+                  <User size={18} /> Hi, {user.name || 'Account'} <ChevronDown size={14} />
+                </button>
 
-            <div className="flex items-center gap-5">
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full bg-white border border-slate-200 rounded-xl shadow-xl w-48 py-2 z-50 mt-1">
+                    <Link to="/profile" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">My Profile</Link>
+                    <Link to="/supplier-dashboard" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Seller Dashboard</Link>
+                    <hr className="my-1 border-slate-100" />
+                    <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50">Logout</button>
+                  </div>
+                )}
+              </div>
+            ) : (
               <Link to="/login" className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
                 <User size={18} /> Login <ChevronDown size={14} />
               </Link>
-              <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
-                More <ChevronDown size={14} />
-              </button>
-              <Link to="/cart" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-indigo-600">
-                <ShoppingCart size={18} /> Cart
-              </Link>
-            </div>
+            )}
+
+            <Link to="/cart" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-indigo-600">
+              <ShoppingCart size={18} /> Cart
+            </Link>
           </div>
 
         </div>
@@ -147,35 +186,58 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 space-y-4 mt-3">
 
-        {/* 2. CATEGORIES NAVIGATION BAR */}
-        <div className="bg-white rounded-xl shadow-sm p-3 border border-slate-200/80 overflow-x-auto scrollbar-none">
+        {/* 2. CATEGORIES HOVER BAR WITH FLIPKART STYLE DROPDOWN */}
+        <div className="bg-white rounded-xl shadow-sm p-3 border border-slate-200/80 overflow-visible relative">
           <div className="flex items-center justify-between min-w-max gap-4 sm:gap-6 px-2">
             {categories.map((cat, idx) => {
               const Icon = cat.icon;
               const isActive = selectedCategory === cat.name;
+              const hasSub = CATEGORY_MAP[cat.name];
+
               return (
-                <button
+                <div 
                   key={idx}
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`flex flex-col items-center gap-1.5 group transition cursor-pointer ${
-                    isActive ? 'border-b-2 border-indigo-600 pb-1' : ''
-                  }`}
+                  className="relative group"
+                  onMouseEnter={() => setHoveredCategory(cat.name)}
+                  onMouseLeave={() => setHoveredCategory(null)}
                 >
-                  <div className={`p-2 rounded-xl transition ${
-                    isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600 group-hover:bg-slate-100 group-hover:text-indigo-600'
-                  }`}>
-                    <Icon size={20} />
-                  </div>
-                  <span className={`text-[11px] font-medium ${isActive ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
-                    {cat.name}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={`flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                      isActive ? 'border-b-2 border-indigo-600 pb-1' : ''
+                    }`}
+                  >
+                    <div className={`p-2 rounded-xl transition ${
+                      isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600 group-hover:bg-slate-100 group-hover:text-indigo-600'
+                    }`}>
+                      <Icon size={20} />
+                    </div>
+                    <span className={`text-[11px] font-medium ${isActive ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
+                      {cat.name}
+                    </span>
+                  </button>
+
+                  {/* Sub-Category Dropdown */}
+                  {hoveredCategory === cat.name && hasSub && (
+                    <div className="absolute top-full left-0 bg-white border border-slate-200 rounded-lg shadow-xl py-2 min-w-[170px] z-50 mt-1">
+                      {hasSub.map((sub, sIdx) => (
+                        <div
+                          key={sIdx}
+                          onClick={() => handleSubCategoryClick(cat.name, sub)}
+                          className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-indigo-600 cursor-pointer transition"
+                        >
+                          {sub}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* 3. PROMO BANNERS GRID (Search Na Hone Par Hi Dikhayein) */}
+        {/* 3. PROMO BANNERS */}
         {!searchQuery && selectedCategory === 'For You' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-gradient-to-r from-sky-100 to-indigo-100 rounded-2xl p-5 border border-sky-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
@@ -209,7 +271,6 @@ export default function Home() {
 
         {/* 4. DYNAMIC PRODUCTS DISPLAY SECTION */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-          
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
               {searchQuery 
@@ -218,12 +279,11 @@ export default function Home() {
                   ? 'Best Deals on Marketplace' 
                   : `${selectedCategory} Products`}
             </h2>
-            <Link to="/marketplace" className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
+            <Link to="/products" className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
               <ArrowRight size={16} />
             </Link>
           </div>
 
-          {/* Product Cards Grid */}
           {loading ? (
             <div className="text-center py-10 text-slate-500 font-medium">Loading products...</div>
           ) : filteredProducts.length > 0 ? (
@@ -259,7 +319,6 @@ export default function Home() {
               </button>
             </div>
           )}
-
         </div>
 
       </div>

@@ -18,18 +18,30 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [keyword, setKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState(null);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('userInfo');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (err) {
+        console.error("Invalid user json", err);
+      }
     }
   }, []);
+
+  // Universal Navigation Helper with Event Prevention & State Reset
+  const handleItemClick = (e, path) => {
+    e.stopPropagation();
+    setIsLoginMenuOpen(false);
+    setIsMoreMenuOpen(false);
+    setActiveCategory(null);
+    navigate(path);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -40,16 +52,18 @@ export default function Navbar() {
     }
   };
 
-  const handleSubCategoryClick = (category, subCategory) => {
+  const handleSubCategoryClick = (e, category, subCategory) => {
+    e.stopPropagation();
     setActiveCategory(null);
     navigate(`/products?category=${category.toLowerCase()}&subCategory=${encodeURIComponent(subCategory)}`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = (e) => {
+    e.stopPropagation();
     localStorage.removeItem('userInfo');
     localStorage.removeItem('token');
     setUser(null);
-    setIsUserMenuOpen(false);
+    setIsLoginMenuOpen(false);
     navigate('/login');
   };
 
@@ -61,7 +75,7 @@ export default function Navbar() {
         
         {/* Logo */}
         <h2 
-          onClick={() => navigate('/')} 
+          onClick={(e) => handleItemClick(e, '/')} 
           style={{ cursor: 'pointer', color: '#2563eb', fontWeight: 'bold', fontSize: '22px', margin: 0 }}
         >
           Store
@@ -101,91 +115,175 @@ export default function Navbar() {
         </form>
 
         {/* Right Menu Items */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', position: 'relative' }}>
           
-          {/* User Account / Login Button */}
-          {user ? (
-            <div 
-              onMouseEnter={() => setIsUserMenuOpen(true)}
-              onMouseLeave={() => setIsUserMenuOpen(false)}
-              style={{ position: 'relative', cursor: 'pointer' }}
-            >
-              <button 
-                style={{
-                  backgroundColor: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
-                  padding: '8px 14px',
-                  borderRadius: '6px',
-                  fontWeight: '600',
-                  color: '#1e293b',
-                  cursor: 'pointer'
-                }}
-              >
-                Hi, {user.name || 'Account'} ▾
-              </button>
+          {/* Flipkart Style Login / Account Dropdown */}
+          <div 
+            onMouseEnter={() => setIsLoginMenuOpen(true)}
+            onMouseLeave={() => setIsLoginMenuOpen(false)}
+            style={{ position: 'relative', cursor: 'pointer', paddingBottom: '4px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '18px' }}>👤</span>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
+                {user ? `Hi, ${user.name || 'User'}` : 'Login'}
+              </span>
+              <span style={{ fontSize: '12px' }}>{isLoginMenuOpen ? '▴' : '▾'}</span>
+            </div>
 
-              {isUserMenuOpen && (
-                <div style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '100%',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  width: '180px',
-                  padding: '6px 0',
-                  zIndex: 2000
+            {isLoginMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                right: '-40px',
+                top: '100%',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                width: '240px',
+                padding: '8px 0',
+                zIndex: 9999
+              }}>
+                
+                {/* Header: New Customer / Signup Link */}
+                <div style={{ 
+                  display: 'flex', 
+                  justify: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '10px 16px', 
+                  borderBottom: '1px solid #f1f5f9' 
                 }}>
-                  <div 
-                    onClick={() => navigate('/profile')}
-                    style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', cursor: 'pointer' }}
-                  >
-                    My Profile
-                  </div>
-                  <div 
-                    onClick={() => navigate('/supplier-dashboard')}
-                    style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', cursor: 'pointer' }}
-                  >
-                    Seller Dashboard
-                  </div>
-                  <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '4px 0' }} />
-                  <div 
-                    onClick={handleLogout}
-                    style={{ padding: '10px 16px', fontSize: '14px', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    Logout
-                  </div>
+                  <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>
+                    {user ? 'Logged in' : 'New customer?'}
+                  </span>
+                  {!user ? (
+                    <span 
+                      onClick={(e) => handleItemClick(e, '/signup')}
+                      style={{ fontSize: '13px', color: '#2563eb', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Sign Up
+                    </span>
+                  ) : (
+                    <span 
+                      onClick={handleLogout}
+                      style={{ fontSize: '13px', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Logout
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  backgroundColor: '#2563eb',
-                  color: '#fff',
-                  padding: '8px 18px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Login
-              </button>
-            </div>
-          )}
 
-          {/* Flipkart Style 'More' Dropdown Menu */}
+                {/* Dropdown Items List */}
+                <div 
+                  onClick={(e) => handleItemClick(e, '/profile')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>👤</span> <span>My Profile</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/plus-zone')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>✨</span> <span>Flipkart Plus Zone</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/orders')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>📦</span> <span>Orders</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/wishlist')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>❤️</span> <span>Wishlist</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/supplier-dashboard')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>🏪</span> <span>Become a Seller</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/rewards')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>🎁</span> <span>Rewards</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/gift-cards')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>💳</span> <span>Gift Cards</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/notifications')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>🔔</span> <span>Notification Preferences</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/customer-care')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>🎧</span> <span>24x7 Customer Care</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/advertise')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>📺</span> <span>Advertise</span>
+                </div>
+
+                <div 
+                  onClick={(e) => handleItemClick(e, '/download-app')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <span>📥</span> <span>Download App</span>
+                </div>
+
+              </div>
+            )}
+          </div>
+
+          {/* Flipkart Style 'More' Dropdown */}
           <div 
             onMouseEnter={() => setIsMoreMenuOpen(true)}
             onMouseLeave={() => setIsMoreMenuOpen(false)}
-            style={{ position: 'relative', cursor: 'pointer' }}
+            style={{ position: 'relative', cursor: 'pointer', paddingBottom: '4px' }}
           >
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155', padding: '8px 0', display: 'block' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>
               More {isMoreMenuOpen ? '▴' : '▾'}
             </span>
 
@@ -203,7 +301,7 @@ export default function Navbar() {
                 zIndex: 9999
               }}>
                 <div 
-                  onClick={() => navigate('/supplier-dashboard')}
+                  onClick={(e) => handleItemClick(e, '/supplier-dashboard')}
                   style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -212,7 +310,7 @@ export default function Navbar() {
                 </div>
 
                 <div 
-                  onClick={() => navigate('/notifications')}
+                  onClick={(e) => handleItemClick(e, '/notifications')}
                   style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -221,7 +319,7 @@ export default function Navbar() {
                 </div>
 
                 <div 
-                  onClick={() => navigate('/customer-care')}
+                  onClick={(e) => handleItemClick(e, '/customer-care')}
                   style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -230,7 +328,7 @@ export default function Navbar() {
                 </div>
 
                 <div 
-                  onClick={() => navigate('/advertise')}
+                  onClick={(e) => handleItemClick(e, '/advertise')}
                   style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -243,8 +341,8 @@ export default function Navbar() {
 
           {/* Cart Button */}
           <button 
-            onClick={() => navigate('/cart')}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={(e) => handleItemClick(e, '/cart')}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}
           >
             🛒 Cart
           </button>
@@ -257,7 +355,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', gap: '24px', padding: '10px 24px', maxWidth: '1280px', margin: '0 auto', overflowX: 'visible', flexWrap: 'wrap' }}>
           
           <span 
-            onClick={() => { setActiveCategory(null); navigate('/products'); }}
+            onClick={(e) => handleItemClick(e, '/products')}
             style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}
           >
             All Categories
@@ -271,7 +369,7 @@ export default function Navbar() {
               style={{ position: 'relative', cursor: 'pointer', display: 'inline-block' }}
             >
               <span 
-                onClick={() => { setActiveCategory(null); navigate(`/products?category=${cat.toLowerCase()}`); }}
+                onClick={(e) => handleItemClick(e, `/products?category=${cat.toLowerCase()}`)}
                 style={{ fontSize: '13px', color: activeCategory === cat ? '#2563eb' : '#475569', fontWeight: '500' }}
               >
                 {cat} ▾
@@ -293,7 +391,7 @@ export default function Navbar() {
                   {CATEGORY_MAP[cat].map((sub) => (
                     <div
                       key={sub}
-                      onClick={() => handleSubCategoryClick(cat, sub)}
+                      onClick={(e) => handleSubCategoryClick(e, cat, sub)}
                       style={{
                         padding: '10px 16px',
                         fontSize: '13px',

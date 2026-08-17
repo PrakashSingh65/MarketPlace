@@ -27,14 +27,30 @@ export default function App() {
 
         <main className="flex-1">
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/signup" element={<Register />} /> {/* Alias for /signup */}
+            
+            {/* Product & Marketplace Routes */}
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/products" element={<Marketplace />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/cart" element={<Cart />} />
+
+            {/* Placeholder/Fallback Routes for Dropdown Links */}
+            <Route path="/orders" element={<BuyerDashboard />} />
+            <Route path="/wishlist" element={<Marketplace />} />
+            <Route path="/plus-zone" element={<Home />} />
+            <Route path="/rewards" element={<Home />} />
+            <Route path="/gift-cards" element={<Home />} />
+            <Route path="/notifications" element={<Home />} />
+            <Route path="/customer-care" element={<Home />} />
+            <Route path="/advertise" element={<Home />} />
+            <Route path="/download-app" element={<Home />} />
 
             {/* 🔒 Supplier Route */}
             <Route
@@ -64,6 +80,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            
             <Route
               path="/profile"
               element={
@@ -73,6 +90,7 @@ export default function App() {
               }
             />
 
+            {/* Catch All Unknown Routes */}
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>

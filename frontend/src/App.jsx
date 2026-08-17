@@ -32,8 +32,8 @@ export default function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/signup" element={<Register />} /> {/* Alias for /signup */}
-            
+            <Route path="/signup" element={<Register />} />
+
             {/* Product & Marketplace Routes */}
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/products" element={<Marketplace />} />
@@ -41,10 +41,10 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/cart" element={<Cart />} />
 
-            {/* Placeholder/Fallback Routes for Dropdown Links */}
+            {/* Menu Dropdown Routes */}
             <Route path="/orders" element={<BuyerDashboard />} />
             <Route path="/wishlist" element={<Marketplace />} />
-            <Route path="/plus-zone" element={<Home />} />
+            <Route path="/lelobhai-zone" element={<Home />} />
             <Route path="/rewards" element={<Home />} />
             <Route path="/gift-cards" element={<Home />} />
             <Route path="/notifications" element={<Home />} />
@@ -72,6 +72,7 @@ export default function App() {
               }
             />
 
+            {/* Checkout & Profile */}
             <Route
               path="/checkout"
               element={
@@ -90,7 +91,6 @@ export default function App() {
               }
             />
 
-            {/* Catch All Unknown Routes */}
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>

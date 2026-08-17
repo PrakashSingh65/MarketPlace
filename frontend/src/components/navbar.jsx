@@ -19,6 +19,7 @@ export default function Navbar() {
   const [keyword, setKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -99,8 +100,10 @@ export default function Navbar() {
           </button>
         </form>
 
-        {/* Auth / Profile Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+        {/* Right Menu Items */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative' }}>
+          
+          {/* User Account / Login Button */}
           {user ? (
             <div 
               onMouseEnter={() => setIsUserMenuOpen(true)}
@@ -161,24 +164,9 @@ export default function Navbar() {
               <button
                 onClick={() => navigate('/login')}
                 style={{
-                  backgroundColor: 'transparent',
-                  color: '#2563eb',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  border: '1px solid #2563eb',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => navigate('/signup')}
-                style={{
                   backgroundColor: '#2563eb',
                   color: '#fff',
-                  padding: '8px 16px',
+                  padding: '8px 18px',
                   borderRadius: '6px',
                   border: 'none',
                   fontWeight: 'bold',
@@ -186,22 +174,85 @@ export default function Navbar() {
                   fontSize: '14px'
                 }}
               >
-                Sign Up
+                Login
               </button>
             </div>
           )}
 
+          {/* Flipkart Style 'More' Dropdown Menu */}
+          <div 
+            onMouseEnter={() => setIsMoreMenuOpen(true)}
+            onMouseLeave={() => setIsMoreMenuOpen(false)}
+            style={{ position: 'relative', cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155', padding: '8px 0', display: 'block' }}>
+              More {isMoreMenuOpen ? '▴' : '▾'}
+            </span>
+
+            {isMoreMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.18)',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                width: '210px',
+                padding: '8px 0',
+                zIndex: 9999
+              }}>
+                <div 
+                  onClick={() => navigate('/supplier-dashboard')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  🛒 <span>Become a Seller</span>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/notifications')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  🔔 <span>Notification Settings</span>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/customer-care')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  🎧 <span>24x7 Customer Care</span>
+                </div>
+
+                <div 
+                  onClick={() => navigate('/advertise')}
+                  style={{ padding: '10px 16px', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  📺 <span>Advertise on Store</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Cart Button */}
           <button 
             onClick={() => navigate('/cart')}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155', paddingLeft: '8px' }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            Cart
+            🛒 Cart
           </button>
         </div>
 
       </div>
 
-      {/* Category Bar with Dropdown Fix */}
+      {/* Category Bar */}
       <div style={{ borderTop: '1px solid #f1f5f9', backgroundColor: '#fff', position: 'relative' }}>
         <div style={{ display: 'flex', gap: '24px', padding: '10px 24px', maxWidth: '1280px', margin: '0 auto', overflowX: 'visible', flexWrap: 'wrap' }}>
           
@@ -226,7 +277,6 @@ export default function Navbar() {
                 {cat} ▾
               </span>
 
-              {/* Fixed Dropdown Menu */}
               {activeCategory === cat && (
                 <div style={{
                   position: 'absolute',

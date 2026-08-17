@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// Marketplace categories aur unki Sub-Categories ka structure
 const CATEGORY_MAP = {
   fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
   mobiles: ["iPhone", "Vivo", "OPPO", "POCO", "Redmi", "Samsung", "realme", "Nothing", "Google", "Motorola"],
@@ -42,7 +41,6 @@ export default function SupplierDashboard() {
     fetchProducts();
   }, []);
 
-  // Category Change Event - SubCategory update karne ke liye
   const handleCategoryChange = (e) => {
     const selectedCat = e.target.value;
     setCategory(selectedCat);
@@ -58,7 +56,7 @@ export default function SupplierDashboard() {
         setProducts(Array.isArray(data) ? data : []);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch products error:", err);
     }
   };
 
@@ -85,12 +83,12 @@ export default function SupplierDashboard() {
     setImagePreview(null);
   };
 
-  // Product Submission to Backend API
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
+      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description);
@@ -113,32 +111,41 @@ export default function SupplierDashboard() {
       }
       if (imageFile) formData.append('image', imageFile);
 
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${apiUrl}/api/products`, {
         method: 'POST',
+        headers: headers,
         body: formData,
       });
 
       if (res.ok) {
+        alert('Product uploaded successfully!');
         setIsModalOpen(false);
         resetForm();
         fetchProducts();
       } else {
-        alert('Upload failed');
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || 'Upload failed. Please check input values.');
       }
     } catch (err) {
-      console.error(err);
+      console.error("Submit error:", err);
+      alert('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const labelStyle = { fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' };
-  const inputStyle = { width: '100%', padding: '8px', borderRadius: '8px', background: '#020617', border: '1px solid #334155', color: '#fff', boxSizing: 'border-box' };
+  const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#020617', border: '1px solid #334155', color: '#fff', boxSizing: 'border-box', outline: 'none' };
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
 
-      {/* Header & Modal Toggle Button */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
@@ -161,7 +168,7 @@ export default function SupplierDashboard() {
         </button>
       </div>
 
-      {/* Active Products List */}
+      {/* Active Products */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
         <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
 
@@ -172,14 +179,14 @@ export default function SupplierDashboard() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
             {products.map((p) => (
-              <div key={p._id} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+              <div key={p._id || p.id} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b' }}>
                 <img
                   src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150'}
                   alt={p.title}
                   style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
                 />
-                <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>{p.title}</p>
-                <div style={{ display: 'flex', gap: '4px', margin: '4px 0' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                <div style={{ display: 'flex', gap: '4px', margin: '4px 0', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
                     {p.category}
                   </span>
@@ -189,7 +196,7 @@ export default function SupplierDashboard() {
                     </span>
                   )}
                 </div>
-                <p style={{ color: '#818cf8', fontSize: '11px' }}>
+                <p style={{ color: '#818cf8', fontSize: '12px', fontWeight: 'bold' }}>
                   ₹{p.pricePerMeter ?? p.price}
                 </p>
               </div>
@@ -198,26 +205,26 @@ export default function SupplierDashboard() {
         )}
       </div>
 
-      {/* Upload Modal */}
+      {/* Modal */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-          overflowY: 'auto', padding: '24px 0'
+          padding: '20px'
         }}>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '380px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontWeight: 'bold', fontSize: '14px' }}>Upload Product</h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>✕</button>
+          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>Upload Product</h3>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
               {/* Image Input */}
-              <div style={{ border: '2px dashed #334155', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
-                <input type="file" accept="image/*" required onChange={handleImageChange} />
+              <div style={{ border: '2px dashed #334155', padding: '16px', borderRadius: '12px', textAlign: 'center', backgroundColor: '#020617' }}>
+                <input type="file" accept="image/*" required onChange={handleImageChange} style={{ fontSize: '12px', color: '#94a3b8' }} />
                 {imagePreview && (
-                  <img src={imagePreview} alt="Preview" style={{ height: '80px', marginTop: '8px', borderRadius: '6px', objectFit: 'cover' }} />
+                  <img src={imagePreview} alt="Preview" style={{ height: '80px', marginTop: '10px', borderRadius: '6px', objectFit: 'cover' }} />
                 )}
               </div>
 
@@ -244,15 +251,11 @@ export default function SupplierDashboard() {
                 />
               </div>
 
-              {/* Dynamic Category & Sub-Category Selection */}
+              {/* Category & Sub-Category */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Category</label>
-                  <select
-                    value={category}
-                    onChange={handleCategoryChange}
-                    style={inputStyle}
-                  >
+                  <select value={category} onChange={handleCategoryChange} style={inputStyle}>
                     {Object.keys(CATEGORY_MAP).map((cat) => (
                       <option key={cat} value={cat}>
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -263,11 +266,7 @@ export default function SupplierDashboard() {
 
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Sub-Category</label>
-                  <select
-                    value={subCategory}
-                    onChange={(e) => setSubCategory(e.target.value)}
-                    style={inputStyle}
-                  >
+                  <select value={subCategory} onChange={(e) => setSubCategory(e.target.value)} style={inputStyle}>
                     {(CATEGORY_MAP[category] || []).map((sub) => (
                       <option key={sub} value={sub}>{sub}</option>
                     ))}
@@ -275,12 +274,14 @@ export default function SupplierDashboard() {
                 </div>
               </div>
 
+              {/* Price & Stock */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Price (₹)</label>
                   <input
                     type="number"
                     required
+                    min="0"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="499"
@@ -291,6 +292,7 @@ export default function SupplierDashboard() {
                   <label style={labelStyle}>Stock</label>
                   <input
                     type="number"
+                    min="0"
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="50"
@@ -299,10 +301,31 @@ export default function SupplierDashboard() {
                 </div>
               </div>
 
+              {/* Colors */}
+              <div>
+                <label style={labelStyle}>Colors (comma-separated)</label>
+                <input
+                  type="text"
+                  value={colors}
+                  onChange={(e) => setColors(e.target.value)}
+                  placeholder="Red, Blue, Black"
+                  style={inputStyle}
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={submitting}
-                style={{ backgroundColor: '#4f46e5', color: '#fff', padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
+                style={{
+                  backgroundColor: submitting ? '#312e81' : '#4f46e5',
+                  color: '#fff',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  marginTop: '8px'
+                }}
               >
                 {submitting ? 'Uploading Product...' : 'Upload Product'}
               </button>

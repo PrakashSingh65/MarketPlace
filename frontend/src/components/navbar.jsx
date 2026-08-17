@@ -103,8 +103,8 @@ export default function Navbar() {
           </button>
         </form>
 
-        {/* Right Menu (Login / Logout / Cart) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative' }}>
+        {/* Right Menu (Login / Signup / Logout / Cart) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
           
           {user ? (
             /* Logged In User Dropdown */
@@ -163,27 +163,52 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            /* Not Logged In - Show Login Button */
-            <button
-              onClick={() => navigate('/login')}
-              style={{
-                backgroundColor: '#2563eb',
-                color: '#fff',
-                padding: '8px 20px',
-                borderRadius: '6px',
-                border: 'none',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Login
-            </button>
+            /* Not Logged In - Show Login & Sign Up Buttons */
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => navigate('/login')}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#2563eb',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #2563eb',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/signup')}
+                style={{
+                  backgroundColor: '#2563eb',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
           )}
 
           {/* Cart Button */}
           <button 
             onClick={() => navigate('/cart')}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}
+            style={{ 
+              border: 'none', 
+              background: 'none', 
+              cursor: 'pointer', 
+              fontWeight: 'bold', 
+              color: '#334155',
+              paddingLeft: '8px' 
+            }}
           >
             Cart
           </button>

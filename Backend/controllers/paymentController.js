@@ -6,13 +6,11 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// 1. Create Payment Order
 exports.createOrder = async (req, res) => {
   try {
     const { amount } = req.body;
-
     const options = {
-      amount: Number(amount) * 100, // Amount in paise
+      amount: Number(amount) * 100,
       currency: 'INR',
       receipt: `receipt_${Date.now()}`
     };
@@ -25,11 +23,9 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// 2. Verify Payment Signature
 exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
@@ -38,7 +34,6 @@ exports.verifyPayment = async (req, res) => {
       .digest('hex');
 
     if (expectedSignature === razorpay_signature) {
-      // Database me Payment/Order Status Update karein
       res.status(200).json({ success: true, message: 'Payment verified successfully' });
     } else {
       res.status(400).json({ success: false, message: 'Invalid payment signature' });

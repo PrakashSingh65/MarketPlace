@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
-  MapPin, 
   User, 
   ChevronDown, 
   ShoppingCart, 
-  ArrowRight,
   Shirt,
   Smartphone,
   Tv,
@@ -16,7 +14,11 @@ import {
   Armchair,
   BookOpen,
   Bike,
-  X
+  X,
+  ChevronRight,
+  TrendingUp,
+  Zap,
+  Award
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -38,12 +40,13 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🔍 Search, Category & Hover States
+  // Search, Category & Hover States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('For You');
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -86,13 +89,11 @@ export default function Home() {
     fetchProducts();
   }, [apiUrl]);
 
-  // Handle SubCategory Click
   const handleSubCategoryClick = (category, sub) => {
     setHoveredCategory(null);
     navigate(`/products?category=${category.toLowerCase()}&subCategory=${encodeURIComponent(sub)}`);
   };
 
-  // Logout Handler
   const handleLogout = () => {
     localStorage.removeItem('userInfo');
     localStorage.removeItem('token');
@@ -101,7 +102,6 @@ export default function Home() {
     navigate('/login');
   };
 
-  // Live Filter Logic
   const filteredProducts = products.filter((product) => {
     const titleMatch = (product.title || product.name || '')
       .toLowerCase()
@@ -115,21 +115,21 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 pb-12">
+    <div className="min-h-screen bg-slate-100 text-slate-800 pb-12 font-sans">
       
-      {/* 1. TOP HEADER SECTION */}
+      {/* 1. TOP HEADER */}
       <header className="bg-white sticky top-0 z-50 border-b border-slate-200 shadow-sm px-4 lg:px-8 py-2.5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
           
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-            <Link to="/" className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
-              <span className="bg-yellow-400 font-bold text-slate-900 px-4 py-1.5 rounded-full text-xs shadow-sm flex items-center gap-1">
-                🛒 TexMarket
-              </span>
+            <Link to="/" className="bg-yellow-400 text-blue-900 font-extrabold italic text-xl px-3 py-1 rounded flex items-center gap-1 shadow-sm">
+              <span>LeloBhai</span>
             </Link>
+            <div className="hidden sm:flex items-center bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-full text-xs font-semibold text-slate-700 cursor-pointer transition">
+              <span>✈️ Travel</span>
+            </div>
           </div>
 
-          {/* Search Bar */}
           <div className="relative w-full md:max-w-2xl">
             <Search className="absolute left-3.5 top-2.5 text-slate-400" size={18} />
             <input
@@ -137,7 +137,7 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for Products, Brands and More"
-              className="w-full bg-sky-50/50 border border-sky-200 rounded-lg pl-10 pr-10 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+              className="w-full bg-blue-50/60 border border-transparent focus:border-blue-400 focus:bg-white rounded-lg pl-10 pr-10 py-2 text-sm text-slate-800 outline-none transition"
             />
             {searchQuery && (
               <button 
@@ -149,16 +149,20 @@ export default function Home() {
             )}
           </div>
 
-          {/* User Auth & Actions */}
           <div className="hidden lg:flex items-center gap-6">
+            <div className="flex flex-col text-xs cursor-pointer leading-tight">
+              <span className="text-slate-400">Location not set</span>
+              <span className="text-blue-600 font-bold hover:underline">Select delivery location &gt;</span>
+            </div>
+
             {user ? (
               <div 
                 className="relative"
                 onMouseEnter={() => setIsUserMenuOpen(true)}
                 onMouseLeave={() => setIsUserMenuOpen(false)}
               >
-                <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 px-3 py-1.5 rounded-lg">
-                  <User size={18} /> Hi, {user.name || 'Account'} <ChevronDown size={14} />
+                <button className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-blue-600">
+                  <User size={18} /> {user.name || 'User'} <ChevronDown size={14} />
                 </button>
 
                 {isUserMenuOpen && (
@@ -171,149 +175,254 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <Link to="/login" className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-indigo-600">
-                <User size={18} /> Login <ChevronDown size={14} />
+              <Link to="/login" className="bg-blue-600 text-white font-bold px-6 py-1.5 rounded hover:bg-blue-700 transition text-sm">
+                Login
               </Link>
             )}
 
-            <Link to="/cart" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-indigo-600">
+            <div className="relative" onMouseLeave={() => setIsMoreOpen(false)}>
+              <button
+                onMouseEnter={() => setIsMoreOpen(true)}
+                className="flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-blue-600 py-1"
+              >
+                More <ChevronDown size={14} />
+              </button>
+
+              {isMoreOpen && (
+                <div className="absolute right-0 w-52 bg-white border border-slate-200 shadow-xl rounded-md py-2 text-slate-700 text-sm z-50">
+                  <Link to="/orders" className="block px-4 py-2 hover:bg-slate-100">📦 Orders</Link>
+                  <Link to="/wishlist" className="block px-4 py-2 hover:bg-slate-100">❤️ Wishlist</Link>
+                  <Link to="/lelobhai-zone" className="block px-4 py-2 hover:bg-slate-100">✨ LeloBhai Zone</Link>
+                  <Link to="/supplier-dashboard" className="block px-4 py-2 hover:bg-slate-100">🏪 Become a Seller</Link>
+                  <Link to="/customer-care" className="block px-4 py-2 hover:bg-slate-100">🎧 Customer Care</Link>
+                </div>
+              )}
+            </div>
+
+            <Link to="/cart" className="flex items-center gap-1 font-semibold text-slate-700 hover:text-blue-600 relative">
               <ShoppingCart size={18} /> Cart
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full absolute -top-2 -right-3">
+                8
+              </span>
             </Link>
           </div>
 
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 space-y-4 mt-3">
+      {/* 2. CATEGORIES BAR */}
+      <div className="bg-white border-b border-slate-200 shadow-sm overflow-visible">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between min-w-max gap-4 sm:gap-6">
+          {categories.map((cat, idx) => {
+            const Icon = cat.icon;
+            const isActive = selectedCategory === cat.name;
+            const hasSub = CATEGORY_MAP[cat.name];
 
-        {/* 2. CATEGORIES HOVER BAR WITH FLIPKART STYLE DROPDOWN */}
-        <div className="bg-white rounded-xl shadow-sm p-3 border border-slate-200/80 overflow-visible relative">
-          <div className="flex items-center justify-between min-w-max gap-4 sm:gap-6 px-2">
-            {categories.map((cat, idx) => {
-              const Icon = cat.icon;
-              const isActive = selectedCategory === cat.name;
-              const hasSub = CATEGORY_MAP[cat.name];
-
-              return (
-                <div 
-                  key={idx}
-                  className="relative group"
-                  onMouseEnter={() => setHoveredCategory(cat.name)}
-                  onMouseLeave={() => setHoveredCategory(null)}
+            return (
+              <div 
+                key={idx}
+                className="relative group"
+                onMouseEnter={() => setHoveredCategory(cat.name)}
+                onMouseLeave={() => setHoveredCategory(null)}
+              >
+                <button
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`flex flex-col items-center gap-1 transition cursor-pointer ${
+                    isActive ? 'border-b-2 border-blue-600 pb-1 text-blue-600 font-bold' : 'text-slate-700 hover:text-blue-600'
+                  }`}
                 >
-                  <button
-                    onClick={() => setSelectedCategory(cat.name)}
-                    className={`flex flex-col items-center gap-1.5 transition cursor-pointer ${
-                      isActive ? 'border-b-2 border-indigo-600 pb-1' : ''
-                    }`}
-                  >
-                    <div className={`p-2 rounded-xl transition ${
-                      isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-600 group-hover:bg-slate-100 group-hover:text-indigo-600'
-                    }`}>
-                      <Icon size={20} />
-                    </div>
-                    <span className={`text-[11px] font-medium ${isActive ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
-                      {cat.name}
-                    </span>
-                  </button>
+                  <div className="p-1">
+                    <Icon size={20} />
+                  </div>
+                  <span className="text-xs font-medium">
+                    {cat.name}
+                  </span>
+                </button>
 
-                  {/* Sub-Category Dropdown */}
-                  {hoveredCategory === cat.name && hasSub && (
-                    <div className="absolute top-full left-0 bg-white border border-slate-200 rounded-lg shadow-xl py-2 min-w-[170px] z-50 mt-1">
-                      {hasSub.map((sub, sIdx) => (
-                        <div
-                          key={sIdx}
-                          onClick={() => handleSubCategoryClick(cat.name, sub)}
-                          className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-indigo-600 cursor-pointer transition"
-                        >
-                          {sub}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                {hoveredCategory === cat.name && hasSub && (
+                  <div className="absolute top-full left-0 bg-white border border-slate-200 rounded-lg shadow-xl py-2 min-w-[170px] z-50 mt-1">
+                    {hasSub.map((sub, sIdx) => (
+                      <div
+                        key={sIdx}
+                        onClick={() => handleSubCategoryClick(cat.name, sub)}
+                        className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-blue-600 cursor-pointer transition"
+                      >
+                        {sub}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. HERO SECTION (INLINE EMBEDDED) */}
+      <section className="bg-slate-950 text-white py-12 px-4 relative overflow-hidden my-4 max-w-7xl mx-auto rounded-3xl border border-slate-800 shadow-2xl">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-cyan-400 text-xs font-semibold">
+              <Zap size={14} className="animate-pulse" /> Exclusive Deals Live Now
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+              Elevate Your <br />
+              <span className="bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 bg-clip-text text-transparent">
+                Shopping Style
+              </span>
+            </h1>
+
+            <p className="text-slate-400 text-sm sm:text-base max-w-lg leading-relaxed">
+              Discover top-rated tech, premium fashion, and home essentials with ultra-fast delivery and unbeatable offers.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Link 
+                to="/products" 
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 hover:opacity-90 transition transform hover:-translate-y-0.5"
+              >
+                Shop Trends
+              </Link>
+              <Link 
+                to="/lelobhai-zone" 
+                className="px-6 py-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 font-bold text-sm hover:bg-slate-800 transition"
+              >
+                Explore Deals
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={18} className="text-cyan-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Best Prices</p>
+                  <p className="text-sm font-bold text-white">Guaranteed</p>
                 </div>
-              );
-            })}
+              </div>
+              <div className="flex items-center gap-2">
+                <Award size={18} className="text-indigo-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Top Brands</p>
+                  <p className="text-sm font-bold text-white">100% Authentic</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-sky-400" />
+                <div>
+                  <p className="text-xs text-slate-400">Express Delivery</p>
+                  <p className="text-sm font-bold text-white">Same Day</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex justify-center items-center">
+            <div className="w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <span className="text-xs font-semibold text-slate-400">🔥 Trending Choice</span>
+                <span className="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-md font-bold">30% OFF</span>
+              </div>
+              <div className="h-48 bg-slate-900/80 rounded-xl flex items-center justify-center p-4">
+                <img 
+                  src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500" 
+                  alt="Hero Promo Product" 
+                  className="h-full object-contain hover:scale-105 transition duration-500"
+                />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Wireless Noise-Canceling Headphones</h3>
+                <p className="text-xs text-slate-400 mt-1">Immersive sound experience with 40h battery life.</p>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <span className="text-lg font-bold text-cyan-400">₹2,999</span>
+                  <span className="text-xs text-slate-500 line-through ml-2">₹4,999</span>
+                </div>
+                <Link to="/products" className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1">
+                  Grab Deal <ChevronRight size={14} />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* 3. PROMO BANNERS */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 space-y-6 mt-4">
+
+        {/* 4. PROMO BANNERS */}
         {!searchQuery && selectedCategory === 'For You' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-r from-sky-100 to-indigo-100 rounded-2xl p-5 border border-sky-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+            <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl p-5 flex flex-col justify-between h-44 shadow-sm">
               <div>
-                <span className="bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Freedom Sale</span>
-                <h3 className="text-xl font-black text-slate-900 mt-2">NOTHING (R)</h3>
-                <p className="text-sm font-bold text-slate-700">Phone (2a) <br/><span className="text-base text-indigo-700">From ₹23,999*</span></p>
+                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded font-bold uppercase">AD</span>
+                <h2 className="text-2xl font-black mt-1">ZEAL 2.0</h2>
+                <p className="text-sm text-slate-300 font-bold">From ₹4,999</p>
               </div>
-              <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300" alt="Phone" className="w-24 h-32 object-cover rounded-lg shadow-md rotate-6" />
+              <span className="text-xs text-slate-400">1.85" AMOLED | 60 Hz refresh rate</span>
             </div>
 
-            <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl p-5 border border-purple-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+            <div className="bg-amber-100 text-slate-800 rounded-xl p-5 flex flex-col justify-between h-44 shadow-sm">
               <div>
-                <span className="bg-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Sale is Live</span>
-                <h3 className="text-xl font-black text-slate-900 mt-2">vivo T3 5G</h3>
-                <p className="text-sm font-bold text-slate-700">44W Fast Charge <br/><span className="text-base text-purple-700">Just ₹15,999*</span></p>
+                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-bold uppercase">AD</span>
+                <h2 className="text-2xl font-bold mt-1">The CTM Ritual</h2>
+                <p className="text-sm text-slate-600">Restore your skin health</p>
               </div>
-              <img src="https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300" alt="Vivo Phone" className="w-24 h-32 object-cover rounded-lg shadow-md -rotate-3" />
+              <button className="bg-slate-900 text-white px-4 py-1.5 rounded-md text-xs font-bold w-max">Shop now</button>
             </div>
 
-            <div className="bg-gradient-to-r from-amber-100 to-orange-100 rounded-2xl p-5 border border-amber-200 relative overflow-hidden flex justify-between items-center min-h-[160px]">
+            <div className="bg-purple-100 text-purple-900 rounded-xl p-5 flex flex-col justify-between h-44 shadow-sm">
               <div>
-                <span className="bg-amber-600 text-white text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">Exclusive</span>
-                <h3 className="text-xl font-black text-slate-900 mt-2">Smart TVs</h3>
-                <p className="text-sm font-bold text-slate-700">4K Ultra HD <br/><span className="text-base text-amber-800">Just ₹9,119*</span></p>
+                <h2 className="text-2xl font-bold mt-2">Sulfate-free frizz</h2>
+                <p className="text-sm text-purple-700">Nourishing smoothness all day</p>
               </div>
-              <img src="https://images.unsplash.com/photo-1593784991095-a205069470b6?w=300" alt="Smart TV" className="w-28 h-28 object-cover rounded-lg shadow-md" />
+              <button className="bg-purple-700 text-white px-4 py-1.5 rounded-md text-xs font-bold w-max">Shop now</button>
             </div>
           </div>
         )}
 
-        {/* 4. DYNAMIC PRODUCTS DISPLAY SECTION */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+        {/* 5. RECOMMENDATION SECTION */}
+        <div className="bg-orange-500 rounded-2xl p-5 sm:p-6 shadow-md space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              {searchQuery 
-                ? `Search Results for "${searchQuery}"` 
-                : selectedCategory === 'For You' 
-                  ? 'Best Deals on Marketplace' 
-                  : `${selectedCategory} Products`}
+            <h2 className="text-white text-lg sm:text-xl font-bold">
+              {user ? `${user.name || 'User'}, still looking for these?` : 'Still looking for these?'}
             </h2>
-            <Link to="/products" className="bg-black text-white p-2 rounded-full hover:bg-slate-800 transition">
-              <ArrowRight size={16} />
+            <Link to="/products" className="bg-white text-orange-600 p-2 rounded-full hover:bg-orange-50 transition shadow">
+              <ChevronRight size={18} />
             </Link>
           </div>
 
           {loading ? (
-            <div className="text-center py-10 text-slate-500 font-medium">Loading products...</div>
+            <div className="text-center py-10 text-white font-medium">Loading products...</div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              {filteredProducts.map((item) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {filteredProducts.slice(0, 5).map((item) => (
                 <Link 
                   to={`/product/${item._id || item.id}`} 
                   key={item._id || item.id} 
-                  className="bg-white rounded-xl p-3 border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col justify-between group cursor-pointer"
+                  className="bg-white rounded-xl p-4 shadow hover:shadow-lg transition flex flex-col items-center group cursor-pointer"
                 >
-                  <div className="aspect-square bg-slate-50 rounded-lg overflow-hidden mb-3">
+                  <div className="h-32 w-full bg-slate-50 rounded-lg overflow-hidden mb-3 flex items-center justify-center">
                     <img 
                       src={item.image || item.images?.[0] || 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400'} 
                       alt={item.title || item.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      className="h-full object-contain group-hover:scale-105 transition duration-300"
                     />
                   </div>
-                  <div className="text-center">
-                    <h4 className="font-semibold text-slate-800 text-sm line-clamp-1">{item.title || item.name}</h4>
-                    <p className="text-emerald-600 font-bold text-xs mt-1">₹{item.price}</p>
-                  </div>
+                  <h4 className="font-bold text-slate-800 text-sm text-center line-clamp-1">{item.title || item.name}</h4>
+                  <p className="text-xs text-blue-600 font-semibold mt-1">View Store</p>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl p-8 text-center border border-slate-200">
+            <div className="bg-white rounded-xl p-8 text-center">
               <p className="text-slate-600 font-medium">Koi product nahi mila!</p>
               <button 
                 onClick={() => { setSearchQuery(''); setSelectedCategory('For You'); }}
-                className="mt-3 text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                className="mt-3 text-xs bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition"
               >
                 Reset Search & Filters
               </button>

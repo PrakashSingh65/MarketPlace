@@ -23,7 +23,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Check Login Status on Load
   useEffect(() => {
     const storedUser = localStorage.getItem('userInfo');
     if (storedUser) {
@@ -31,7 +30,6 @@ export default function Navbar() {
     }
   }, []);
 
-  // Search Submit Handler
   const handleSearch = (e) => {
     e.preventDefault();
     if (keyword.trim()) {
@@ -41,13 +39,11 @@ export default function Navbar() {
     }
   };
 
-  // Sub-Category Selection
   const handleSubCategoryClick = (category, subCategory) => {
     setActiveCategory(null);
     navigate(`/products?category=${category.toLowerCase()}&subCategory=${encodeURIComponent(subCategory)}`);
   };
 
-  // Logout Handler
   const handleLogout = () => {
     localStorage.removeItem('userInfo');
     localStorage.removeItem('token');
@@ -62,7 +58,7 @@ export default function Navbar() {
       {/* Top Navbar Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', gap: '16px', maxWidth: '1280px', margin: '0 auto' }}>
         
-        {/* Brand Logo */}
+        {/* Logo */}
         <h2 
           onClick={() => navigate('/')} 
           style={{ cursor: 'pointer', color: '#2563eb', fontWeight: 'bold', fontSize: '22px', margin: 0 }}
@@ -103,11 +99,9 @@ export default function Navbar() {
           </button>
         </form>
 
-        {/* Right Menu (Login / Signup / Logout / Cart) */}
+        {/* Auth / Profile Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
-          
           {user ? (
-            /* Logged In User Dropdown */
             <div 
               onMouseEnter={() => setIsUserMenuOpen(true)}
               onMouseLeave={() => setIsUserMenuOpen(false)}
@@ -138,7 +132,7 @@ export default function Navbar() {
                   border: '1px solid #e2e8f0',
                   width: '180px',
                   padding: '6px 0',
-                  zIndex: 1010
+                  zIndex: 2000
                 }}>
                   <div 
                     onClick={() => navigate('/profile')}
@@ -163,7 +157,6 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            /* Not Logged In - Show Login & Sign Up Buttons */
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
                 onClick={() => navigate('/login')}
@@ -198,17 +191,9 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Cart Button */}
           <button 
             onClick={() => navigate('/cart')}
-            style={{ 
-              border: 'none', 
-              background: 'none', 
-              cursor: 'pointer', 
-              fontWeight: 'bold', 
-              color: '#334155',
-              paddingLeft: '8px' 
-            }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#334155', paddingLeft: '8px' }}
           >
             Cart
           </button>
@@ -216,12 +201,12 @@ export default function Navbar() {
 
       </div>
 
-      {/* Category Hover Menu Bar */}
-      <div style={{ borderTop: '1px solid #f1f5f9', backgroundColor: '#fff' }}>
-        <div style={{ display: 'flex', gap: '20px', padding: '10px 24px', overflowX: 'auto', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Category Bar with Dropdown Fix */}
+      <div style={{ borderTop: '1px solid #f1f5f9', backgroundColor: '#fff', position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '24px', padding: '10px 24px', maxWidth: '1280px', margin: '0 auto', overflowX: 'visible', flexWrap: 'wrap' }}>
           
           <span 
-            onClick={() => navigate('/products')}
+            onClick={() => { setActiveCategory(null); navigate('/products'); }}
             style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}
           >
             All Categories
@@ -232,30 +217,43 @@ export default function Navbar() {
               key={cat}
               onMouseEnter={() => setActiveCategory(cat)}
               onMouseLeave={() => setActiveCategory(null)}
-              style={{ position: 'relative', cursor: 'pointer' }}
+              style={{ position: 'relative', cursor: 'pointer', display: 'inline-block' }}
             >
-              <span style={{ fontSize: '13px', color: activeCategory === cat ? '#2563eb' : '#475569', fontWeight: '500' }}>
-                {cat}
+              <span 
+                onClick={() => { setActiveCategory(null); navigate(`/products?category=${cat.toLowerCase()}`); }}
+                style={{ fontSize: '13px', color: activeCategory === cat ? '#2563eb' : '#475569', fontWeight: '500' }}
+              >
+                {cat} ▾
               </span>
 
+              {/* Fixed Dropdown Menu */}
               {activeCategory === cat && (
                 <div style={{
                   position: 'absolute',
                   top: '100%',
                   left: 0,
                   backgroundColor: '#ffffff',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
                   borderRadius: '6px',
-                  padding: '6px 0',
-                  minWidth: '160px',
-                  zIndex: 1000,
-                  border: '1px solid #e2e8f0'
+                  padding: '8px 0',
+                  minWidth: '180px',
+                  zIndex: 9999,
+                  border: '1px solid #cbd5e1'
                 }}>
                   {CATEGORY_MAP[cat].map((sub) => (
                     <div
                       key={sub}
                       onClick={() => handleSubCategoryClick(cat, sub)}
-                      style={{ padding: '8px 14px', fontSize: '13px', color: '#334155' }}
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '13px',
+                        color: '#334155',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                     >
                       {sub}
                     </div>

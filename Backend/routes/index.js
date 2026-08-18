@@ -1,18 +1,18 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 
 // Individual Route Imports
-const authRoutes = require('./auth.routes');
-const productRoutes = require('./product.routes');
-const orderRoutes = require('./order.routes');
-const supplierRoutes = require('./supplier.routes');
-const buyerRoutes = require('./buyer.routes');
+import authRoutes from './authRoutes.js';
+import productRoutes from './productRoutes.js';
+import orderRoutes from './orderRoutes.js';
+import cartRoutes from './cartRoutes.js';
+
+const router = express.Router();
 
 // API Sub-routes Mapping
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
+router.use('/fabrics', productRoutes);
 router.use('/orders', orderRoutes);
-router.use('/supplier', supplierRoutes);
-router.use('/buyer', buyerRoutes);
+router.use('/cart', cartRoutes);
 
-module.exports = router;
+export default router;

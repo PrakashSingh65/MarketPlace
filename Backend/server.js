@@ -1,43 +1,42 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import authRoutes from './routes/authRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import morgan from 'morgan';
-import orderRoutes from './routes/orderRoutes.js';
-import cartRoutes from './routes/cartRoutes.js';
+import mainRouter from './routes/index.js';
 
 dotenv.config();
 
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Main API Route Mounting
+app.use('/api', mainRouter);
 
-app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes); // backup
-
-app.use('/api/products', productRoutes);
-app.use('/products', productRoutes);
-app.use('/api/fabrics', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/orders', orderRoutes);
-app.use('/api/cart',cartRoutes);
-
-
-
+// Root Route
 app.get('/', (req, res) => {
   res.send('B2B Textile Marketplace API Running!');
 });
 
+// 404 Route Handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+// Database Connection & Server Startup
+connectDB()
+  .then(() => {
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
-});
+  })
+  .catch((err) => {
+    console.error('❌ Database connection failed:', err);
+    process.exit(1);
+  });

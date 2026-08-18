@@ -14,6 +14,7 @@ import BuyerDashboard from '../pages/BuyerDashboard';
 import SupplierDashboard from '../pages/supplierDashboard';
 import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
+import CustomerCare from '../pages/CustomerCare';
 
 export default function AppRoutes({ searchQuery, selectedCategory }) {
   return (

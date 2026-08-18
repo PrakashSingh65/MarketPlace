@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-import Navbar from './components/navbar';
+import Navbar from './components/Navbar';
+import CategoryBar from './components/CategoryBar';
 import Footer from './components/Footer';
 import Login from './pages/login';
 import Register from './pages/register';
@@ -20,23 +21,30 @@ import Checkout from './pages/Checkout';
 import BuyerDashboard from './pages/BuyerDashboard';
 
 export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('For You');
+
   return (
     <CartProvider>
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-        <Navbar />
+        {/* Main Navbar */}
+        <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+        {/* Categories Sub-Navbar */}
+        <CategoryBar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
 
         <main className="flex-1">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/home" element={<Home />} />
+            <Route path="/home" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/signup" element={<Register />} />
 
             {/* Product & Marketplace Routes */}
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/products" element={<Marketplace />} />
+            <Route path="/marketplace" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/products" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/cart" element={<Cart />} />
@@ -44,13 +52,13 @@ export default function App() {
             {/* Menu Dropdown Routes */}
             <Route path="/orders" element={<BuyerDashboard />} />
             <Route path="/wishlist" element={<Marketplace />} />
-            <Route path="/lelobhai-zone" element={<Home />} />
-            <Route path="/rewards" element={<Home />} />
-            <Route path="/gift-cards" element={<Home />} />
-            <Route path="/notifications" element={<Home />} />
-            <Route path="/customer-care" element={<Home />} />
-            <Route path="/advertise" element={<Home />} />
-            <Route path="/download-app" element={<Home />} />
+            <Route path="/lelobhai-zone" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/rewards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/gift-cards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/notifications" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/customer-care" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/advertise" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
+            <Route path="/download-app" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
 
             {/* 🔒 Supplier Route */}
             <Route

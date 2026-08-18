@@ -5,9 +5,10 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
-export default function Navbar({ searchQuery, setSearchQuery }) {
+export default function Navbar({ searchQuery, setSearchQuery, cartItems = [] }) {
   const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [localCart, setLocalCart] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,6 +16,15 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const syncCart = () => {
+      const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      setLocalCart(storedCart);
+    };
+
+    syncCart();
+    window.addEventListener('storage', syncCart);
+    return () => window.removeEventListener('storage', syncCart);
   }, []);
 
   const handleLogout = () => {
@@ -24,6 +34,11 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
     setIsUserMenuOpen(false);
     navigate('/login');
   };
+
+  // ⚡ TOTAL QUANTITY CALCULATION ⚡
+  // Single quantity items aur bulk quantities dono ko sum karega
+  const currentCart = cartItems.length > 0 ? cartItems : localCart;
+  const totalQuantity = currentCart.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
 
   return (
     <header className="bg-[#0c0a1d]/90 backdrop-blur-md sticky top-0 z-50 border-b border-purple-900/40 shadow-lg px-4 lg:px-8 py-2.5">
@@ -133,11 +148,14 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
             )}
           </div>
 
+          {/* Dynamic Cart Badge showing TOTAL QUANTITY */}
           <Link to="/cart" className="flex items-center gap-1 font-semibold text-slate-200 hover:text-cyan-400 relative">
             <ShoppingCart size={18} /> Cart
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full absolute -top-2 -right-3 shadow-[0_0_8px_#ef4444]">
-              8
-            </span>
+            {totalQuantity > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full absolute -top-2 -right-3 shadow-[0_0_8px_#ef4444]">
+                {totalQuantity}
+              </span>
+            )}
           </Link>
         </div>
 

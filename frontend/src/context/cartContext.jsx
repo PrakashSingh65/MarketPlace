@@ -8,29 +8,52 @@ export const CartProvider = ({ children }) => {
       const savedCart = localStorage.getItem('cart');
       return savedCart ? JSON.parse(savedCart) : [];
     } catch (e) {
+      console.error("Cart initial load error:", e);
       return [];
     }
   });
 
   // Jab bhi cart array change ho, localStorage update karein
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    try {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    } catch (e) {
+      console.error("Cart save error:", e);
+    }
   }, [cart]);
 
-  const addToCart = (product) => {
+  const addToCart = (product, qty = 1) => {
     if (!product) return;
+
+    const targetId = product._id || product.id;
+
     setCart((prevCart) => {
-      // Check if product already exists
       const existingIndex = prevCart.findIndex(
-        (item) => (item._id || item.id) === (product._id || product.id)
+        (item) => (item._id || item.id) === targetId
       );
 
       if (existingIndex > -1) {
-        const updated = [...prevCart];
-        updated[existingIndex].quantity = (updated[existingIndex].quantity || 1) + 1;
-        return updated;
+        // Immutable update (Object duplicate banakar quantity update karna)
+        return prevCart.map((item, index) => {
+          if (index === existingIndex) {
+            return {
+              ...item,
+              quantity: (Number(item.quantity) || 1) + Number(qty),
+            };
+          }
+          return item;
+        });
       }
-      return [...prevCart, { ...product, quantity: 1 }];
+
+      // Naya product add karne ke liye
+      return [
+        ...prevCart,
+        {
+          ...product,
+          id: targetId,
+          quantity: Number(qty) || 1,
+        },
+      ];
     });
   };
 
@@ -40,16 +63,38 @@ export const CartProvider = ({ children }) => {
     );
   };
 
+  const updateQuantity = (productId, newQty) => {
+    if (newQty <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        (item._id || item.id) === productId
+          ? { ...item, quantity: Number(newQty) }
+          : item
+      )
+    );
+  };
+
   const clearCart = () => {
     setCart([]);
     localStorage.removeItem('cart');
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider
+      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}
+    >
       {children}
     </CartContext.Provider>
   );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};

@@ -4,27 +4,21 @@ import {
   Heart, Store, Gift, CreditCard, Bell, Headphones, TrendingUp, Download, Sparkles 
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext'; // 👈 Context import added
 
-export default function Navbar({ searchQuery, setSearchQuery, cartItems = [] }) {
+export default function Navbar({ searchQuery, setSearchQuery }) {
   const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [localCart, setLocalCart] = useState([]);
   const navigate = useNavigate();
+
+  // Context se cart access karein
+  const { cart = [] } = useCart() || {};
 
   useEffect(() => {
     const storedUser = localStorage.getItem('userInfo');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-
-    const syncCart = () => {
-      const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      setLocalCart(storedCart);
-    };
-
-    syncCart();
-    window.addEventListener('storage', syncCart);
-    return () => window.removeEventListener('storage', syncCart);
   }, []);
 
   const handleLogout = () => {
@@ -35,10 +29,8 @@ export default function Navbar({ searchQuery, setSearchQuery, cartItems = [] }) 
     navigate('/login');
   };
 
-  // ⚡ TOTAL QUANTITY CALCULATION ⚡
-  // Single quantity items aur bulk quantities dono ko sum karega
-  const currentCart = cartItems.length > 0 ? cartItems : localCart;
-  const totalQuantity = currentCart.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
+  // Total Quantity Calculation (Real-time synced)
+  const totalQuantity = cart.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
 
   return (
     <header className="bg-[#0c0a1d]/90 backdrop-blur-md sticky top-0 z-50 border-b border-purple-900/40 shadow-lg px-4 lg:px-8 py-2.5">
@@ -148,7 +140,7 @@ export default function Navbar({ searchQuery, setSearchQuery, cartItems = [] }) 
             )}
           </div>
 
-          {/* Dynamic Cart Badge showing TOTAL QUANTITY */}
+          {/* Dynamic Cart Badge */}
           <Link to="/cart" className="flex items-center gap-1 font-semibold text-slate-200 hover:text-cyan-400 relative">
             <ShoppingCart size={18} /> Cart
             {totalQuantity > 0 && (

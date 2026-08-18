@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Smartphone, Sparkles, Zap, Diamond, Rocket, Laptop } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import CategoryBar from '../components/CategoryBar';
 
 // HERO SECTION COMPONENT
 function InlineHeroSection() {
@@ -145,12 +143,10 @@ function InlineHeroSection() {
   );
 }
 
-// MAIN HOME PAGE
-export default function Home() {
+// MAIN HOME PAGE (Accepts props passed from App.jsx)
+export default function Home({ searchQuery = '', selectedCategory = 'For You' }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('For You');
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -185,16 +181,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#070714] text-slate-100 pb-12 font-sans">
-      {/* NAVBAR */}
-      <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-      {/* CATEGORY BAR */}
-      <CategoryBar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-
-      {/* HERO SECTION */}
+      {/* Dynamic Hero Section */}
       <InlineHeroSection />
 
-      {/* PRODUCTS SECTION */}
+      {/* Featured Products Section */}
       <div className="max-w-7xl mx-auto px-2 sm:px-4 space-y-6 mt-6">
         <div className="bg-[#0a0817] border border-orange-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_30px_rgba(249,115,22,0.2)] space-y-4">
           <div className="flex items-center justify-between">
@@ -229,12 +219,6 @@ export default function Home() {
           ) : (
             <div className="bg-[#0f0c1b] rounded-2xl p-8 text-center border border-purple-900/40">
               <p className="text-slate-400 font-medium">No products found!</p>
-              <button 
-                onClick={() => { setSearchQuery(''); setSelectedCategory('For You'); }}
-                className="mt-3 text-xs bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
-              >
-                Reset Search
-              </button>
             </div>
           )}
         </div>

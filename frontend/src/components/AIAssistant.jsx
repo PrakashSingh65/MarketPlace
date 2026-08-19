@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Bot, X, Send, Mic, MicOff, Sparkles, ArrowRight, Scale } from 'lucide-react';
+import { Bot, X, Send, Mic, MicOff, Sparkles } from 'lucide-react';
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,15 +16,20 @@ export default function AIAssistant() {
   const [products, setProducts] = useState([]);
   const chatEndRef = useRef(null);
 
-  // 🟢 Fetch marketplace products for AI recommendations (Updated to /api/products)
+  // 🟢 Fetch marketplace products safely
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || '';
         const response = await axios.get(`${apiUrl}/api/products`);
-        setProducts(response.data);
+        
+        // Response array format validation check
+        const data = response.data;
+        const productsList = Array.isArray(data) ? data : (data.products || []);
+        setProducts(productsList);
       } catch (error) {
         console.error("Error fetching products for AI:", error);
+        setProducts([]);
       }
     };
 
@@ -73,7 +78,7 @@ export default function AIAssistant() {
     }
   };
 
-  // Send Message & AI Logic
+  // Send Message & AI Recommendation Logic
   const handleSend = (e) => {
     e?.preventDefault();
     if (!input.trim()) return;
@@ -84,12 +89,13 @@ export default function AIAssistant() {
     const query = input.toLowerCase();
     setInput('');
 
-    // AI Recommendation Logic based on fetched products
+    // Safe filtering with Array check
     setTimeout(() => {
-      const matchedProducts = products.filter((p) => {
-        const nameMatch = p.name?.toLowerCase().includes(query) || p.title?.toLowerCase().includes(query);
-        const categoryMatch = p.category?.toLowerCase().includes(query);
-        const materialMatch = p.material?.toLowerCase().includes(query);
+      const safeProducts = Array.isArray(products) ? products : [];
+      const matchedProducts = safeProducts.filter((p) => {
+        const nameMatch = (p.name || p.title || '').toLowerCase().includes(query);
+        const categoryMatch = (p.category || '').toLowerCase().includes(query);
+        const materialMatch = (p.material || '').toLowerCase().includes(query);
         return nameMatch || categoryMatch || materialMatch;
       });
 
@@ -106,7 +112,7 @@ export default function AIAssistant() {
       };
 
       setMessages((prev) => [...prev, aiReply]);
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -124,7 +130,7 @@ export default function AIAssistant() {
         </button>
       )}
 
-      {/* AI Chat Drawer / Window */}
+      {/* AI Chat Window */}
       {isOpen && (
         <div className="w-[360px] sm:w-[400px] h-[520px] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
           
@@ -178,7 +184,7 @@ export default function AIAssistant() {
                       >
                         <img
                           src={product.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=300'}
-                          alt={product.name || product.title}
+                          alt={product.name || product.title || 'Product'}
                           className="w-12 h-12 rounded-xl object-cover border border-slate-800"
                         />
                         <div className="flex-1 min-w-0">

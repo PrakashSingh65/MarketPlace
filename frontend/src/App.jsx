@@ -51,7 +51,7 @@ export default function App() {
 
             {/* Menu Dropdown Routes */}
             <Route path="/orders" element={<BuyerDashboard />} />
-            <Route path="/wishlist" element={<Marketplace />} />
+            <Route path="/wishlist" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
             <Route path="/lelobhai-zone" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
             <Route path="/rewards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
             <Route path="/gift-cards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
@@ -80,7 +80,7 @@ export default function App() {
               }
             />
 
-            {/* Checkout & Profile */}
+            {/* Checkout Route */}
             <Route
               path="/checkout"
               element={
@@ -90,6 +90,7 @@ export default function App() {
               }
             />
             
+            {/* Profile & Account Routes */}
             <Route
               path="/profile"
               element={
@@ -98,7 +99,16 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
+            {/* Fallback Route */}
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </main>

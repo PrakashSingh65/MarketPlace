@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, Package, Layers, Shield, Droplets, Gem, Wind, Leaf, Shirt, 
-  Search, Send, Truck, ArrowRight, CheckCircle2, Sparkles, Star, Award, ChevronRight
+  Search, Send, Truck, ArrowRight, Sparkles, Award, ChevronRight
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 
@@ -15,10 +15,18 @@ export default function LandingPage() {
     const fetchProducts = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await fetch(`${apiUrl}/products`);
+        
+        // 🟢 FIX 1: `/api/products` endpoint use kiya gaya hai
+        const res = await fetch(`${apiUrl}/api/products`);
+        
         if (res.ok) {
           const data = await res.json();
-          setFeaturedProducts(data.slice(0, 8));
+          
+          // 🟢 FIX 2: Check kiya ki response Direct Array hai ya Object ({ products: [] })
+          const productsArray = Array.isArray(data) ? data : (data.products || []);
+          setFeaturedProducts(productsArray.slice(0, 8));
+        } else {
+          console.error(`Failed to fetch products: ${res.status}`);
         }
       } catch (err) {
         console.error('Error fetching featured products:', err);
@@ -26,6 +34,7 @@ export default function LandingPage() {
         setLoading(false);
       }
     };
+    
     fetchProducts();
   }, []);
 
@@ -85,7 +94,6 @@ export default function LandingPage() {
       
       {/* HERO SECTION */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden border-b border-slate-800">
-        {/* Background Image with Dark Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
             src="/textile_hero_bg_1785859871075.jpg" 
@@ -97,15 +105,12 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center flex flex-col items-center">
-          
-          {/* Trust Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-semibold mb-8 backdrop-blur-md animate-fade-in shadow-lg shadow-indigo-500/10">
             <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
             <span>India's Next-Gen B2B Textile Ecosystem</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           </div>
           
-          {/* Main Title */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl leading-[1.15] mb-8">
             Source Wholesale Fabrics <br className="hidden sm:block" />
             Directly From <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-emerald-400">Verified Mills & Mills Direct</span>
@@ -115,7 +120,6 @@ export default function LandingPage() {
             Eliminate middlemen. Discover 10,000+ certified textiles, compare bulk pricing, transparent MOQ limits, and trade with verified Indian manufacturers.
           </p>
 
-          {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto">
             <Link 
               to="/marketplace" 
@@ -134,7 +138,6 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Micro Stats Row */}
           <div className="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl w-full text-slate-400 text-sm font-medium">
             <div className="flex flex-col items-center">
               <span className="text-2xl font-black text-white">500+</span>
@@ -153,7 +156,6 @@ export default function LandingPage() {
               <span className="text-xs text-slate-400 uppercase tracking-wider mt-1">Trade Assurance</span>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -202,7 +204,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CATEGORIES SECTION WITH IMAGE CARDS */}
+      {/* CATEGORIES SECTION */}
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-14">
           <div>
@@ -223,17 +225,14 @@ export default function LandingPage() {
                 onClick={() => navigate(`/marketplace?category=${cat.name}`)}
                 className="group relative h-80 rounded-3xl overflow-hidden cursor-pointer border border-slate-800 hover:border-indigo-500/50 transition-all duration-500 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10"
               >
-                {/* Background Image */}
                 <img 
                   src={cat.image} 
                   alt={cat.name} 
                   className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 filter brightness-90 contrast-110"
                 />
                 
-                {/* Gradient Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-t ${cat.color} opacity-90 group-hover:opacity-95 transition-opacity duration-300`} />
 
-                {/* Content */}
                 <div className="relative z-10 p-8 h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 text-white">
@@ -290,7 +289,7 @@ export default function LandingPage() {
           ) : featuredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredProducts.map((product) => (
-                <ProductCard key={product._id} product={product} />
+                <ProductCard key={product._id || product.id} product={product} />
               ))}
             </div>
           ) : (

@@ -1,42 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function SearchBar() {
-  const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('q') || '');
   const navigate = useNavigate();
 
-  const handleSearchSubmit = (e) => {
+  useEffect(() => {
+    setQuery(searchParams.get('q') || '');
+  }, [searchParams]);
+
+  const handleSearch = (e) => {
     e.preventDefault();
     if (query.trim()) {
-      navigate(`/marketplace?q=${encodeURIComponent(query.trim())}`);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setQuery(val);
-    if (val.trim()) {
-      navigate(`/marketplace?q=${encodeURIComponent(val.trim())}`);
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     } else {
-      navigate('/marketplace');
+      navigate('/search');
     }
   };
 
   const handleClear = () => {
     setQuery('');
-    navigate('/marketplace');
+    navigate('/search');
   };
 
   return (
-    <form onSubmit={handleSearchSubmit} className="relative w-full">
+    <form onSubmit={handleSearch} className="relative w-full">
       <div className="relative flex items-center w-full">
         <Search className="absolute left-3.5 text-purple-400 pointer-events-none" size={18} />
         
         <input
           type="text"
           value={query}
-          onChange={handleInputChange}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            navigate(`/search?q=${encodeURIComponent(e.target.value)}`);
+          }}
           placeholder="Search for Products, Brands and More..."
           className="w-full bg-purple-950/40 border border-purple-500/30 rounded-xl pl-10 pr-10 py-2 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-orange-500/80 focus:ring-1 focus:ring-orange-500/80 transition"
         />

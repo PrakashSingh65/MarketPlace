@@ -37,14 +37,16 @@ export default function App() {
 
         <main className="flex-1">
           <Routes>
-            {/* Primary Marketplace & Search Routes */}
-            <Route path="/" element={<Marketplace selectedCategory={selectedCategory} />} />
+            {/* Home Routes */}
+            <Route path="/" element={<Home selectedCategory={selectedCategory} />} />
+            <Route path="/home" element={<Home selectedCategory={selectedCategory} />} />
+
+            {/* Marketplace & Search Routes */}
             <Route path="/marketplace" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/search" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/products" element={<Marketplace selectedCategory={selectedCategory} />} />
 
-            {/* Other Pages */}
-            <Route path="/home" element={<Home selectedCategory={selectedCategory} />} />
+            {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/signup" element={<Register />} />
@@ -54,7 +56,7 @@ export default function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/onboarding" element={<Onboarding />} />
 
-            {/* Account & Orders Dropdown Routes */}
+            {/* Dropdown Navigation Routes */}
             <Route path="/orders" element={<BuyerDashboard />} />
             <Route path="/wishlist" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/lelobhai-zone" element={<Home selectedCategory={selectedCategory} />} />
@@ -65,7 +67,7 @@ export default function App() {
             <Route path="/advertise" element={<Home selectedCategory={selectedCategory} />} />
             <Route path="/download-app" element={<Home selectedCategory={selectedCategory} />} />
 
-            {/* Protected Dashboard Routes */}
+            {/* Protected Routes */}
             <Route
               path="/supplier-dashboard"
               element={
@@ -108,7 +110,7 @@ export default function App() {
             />
 
             {/* Fallback Route */}
-            <Route path="*" element={<Marketplace selectedCategory={selectedCategory} />} />
+            <Route path="*" element={<Home selectedCategory={selectedCategory} />} />
           </Routes>
         </main>
 

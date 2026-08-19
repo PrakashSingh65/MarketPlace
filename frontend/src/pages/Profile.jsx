@@ -38,6 +38,8 @@ export default function Profile() {
   };
 
   const nameParts = (currentUser.name || 'Prakash Singh').split(' ');
+  
+  // User Form State
   const [formData, setFormData] = useState({
     firstName: nameParts[0] || 'Prakash',
     lastName: nameParts.slice(1).join(' ') || 'Singh',
@@ -46,10 +48,13 @@ export default function Profile() {
     phone: currentUser.phone || '+919236894256'
   });
 
+  // Save handler for profile updates
   const handleSave = (type) => {
     if (type === 'name') setIsEditingName(false);
     if (type === 'email') setIsEditingEmail(false);
     if (type === 'phone') setIsEditingPhone(false);
+    
+    // Yahan aap backend API call integrate kar sakte hain
     alert(`${type.toUpperCase()} details saved successfully!`);
   };
 
@@ -223,7 +228,7 @@ export default function Profile() {
         {/* Right Content Area */}
         <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-[500px]">
           
-          {/* Profile Information */}
+          {/* Profile Information View */}
           {activeTab === 'profile' && (
             <>
               <div>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 
 export default function Marketplace({ selectedCategory }) {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
+  const { addToCart } = useCart();
 
-  // Working Demo Products with Images
   const products = [
     {
       id: 1,
@@ -55,7 +56,7 @@ export default function Marketplace({ selectedCategory }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Fabric & Products Marketplace</h1>
+        <h1 className="text-2xl font-bold">Marketplace</h1>
         {searchQuery && (
           <p className="text-sm text-amber-400 mt-1">
             Search results for: <span className="font-semibold text-white">"{searchQuery}"</span>
@@ -71,17 +72,17 @@ export default function Marketplace({ selectedCategory }) {
                 src={product.image} 
                 alt={product.name} 
                 className="w-full h-48 object-cover"
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/300?text=Product+Image';
-                }}
               />
               <div className="p-4">
                 <h3 className="font-semibold text-base text-slate-100">{product.name}</h3>
                 <p className="text-xs text-purple-300 mt-1">Category: {product.category}</p>
                 <div className="flex justify-between items-center mt-4">
                   <span className="font-bold text-orange-400">₹{product.price}</span>
-                  <button className="bg-orange-500 hover:bg-orange-600 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition">
-                    View Product
+                  <button 
+                    onClick={() => addToCart(product)}
+                    className="bg-orange-500 hover:bg-orange-600 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition"
+                  >
+                    Add to Cart
                   </button>
                 </div>
               </div>

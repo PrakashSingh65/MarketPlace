@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, QrCode, Building, Banknote, CheckCircle, ArrowLeft, Lock } from 'lucide-react';
+import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock } from 'lucide-react';
 
 export default function Checkout({ cart = [], clearCart, onOrderPlaced }) {
   const [shippingAddress, setShippingAddress] = useState({
@@ -101,7 +101,7 @@ export default function Checkout({ cart = [], clearCart, onOrderPlaced }) {
 
         <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* LEFT: Shipping Details & Payment Methods (2 cols) */}
+          {/* LEFT: Shipping Details & Payment Methods */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* 1. Shipping Address */}
@@ -162,7 +162,7 @@ export default function Checkout({ cart = [], clearCart, onOrderPlaced }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 
-                {/* UPI / QR Option */}
+                {/* UPI Option */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('upi')}
@@ -249,7 +249,7 @@ export default function Checkout({ cart = [], clearCart, onOrderPlaced }) {
                     <div key={idx} className="flex justify-between items-center text-xs">
                       <div>
                         <p className="text-slate-200 font-semibold truncate max-w-[150px]">{item.title || item.name}</p>
-                        <p className="text-[10px] text-slate-500">Qty: {item.quantity || 1}m</p>
+                        <p className="text-[10px] text-slate-500">Qty: {item.quantity || 1}</p>
                       </div>
                       <span className="font-bold text-white">₹{Number(item.price) * (item.quantity || 1)}</span>
                     </div>
@@ -279,7 +279,7 @@ export default function Checkout({ cart = [], clearCart, onOrderPlaced }) {
               <button
                 type="submit"
                 disabled={loading || cart.length === 0}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-50 mt-2"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-50 mt-2 cursor-pointer"
               >
                 {loading ? 'Processing Payment...' : `Pay & Place Order (₹${grandTotal})`}
               </button>

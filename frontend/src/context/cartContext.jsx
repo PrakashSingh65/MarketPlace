@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const CartContext = createContext();
+// 👈 Yahan 'export' add karein
+export const CartContext = createContext(); 
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(() => {

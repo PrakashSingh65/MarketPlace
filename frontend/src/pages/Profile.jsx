@@ -9,19 +9,26 @@ import {
   Power, 
   ChevronRight, 
   HelpCircle, 
-  Truck 
+  Truck,
+  Trash2,
+  Plus
 } from 'lucide-react';
 
 export default function Profile() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Active Tab State (Account Settings, Payments & My Stuff)
+  // Active Tab State
   const [activeTab, setActiveTab] = useState('profile');
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
+
+  // UPI State
+  const [upiList, setUpiList] = useState([]);
+  const [newUpi, setNewUpi] = useState('');
+  const [showAddUpi, setShowAddUpi] = useState(false);
 
   const currentUser = user || {
     name: 'Prakash Singh',
@@ -44,6 +51,22 @@ export default function Profile() {
     if (type === 'email') setIsEditingEmail(false);
     if (type === 'phone') setIsEditingPhone(false);
     alert(`${type.toUpperCase()} details saved successfully!`);
+  };
+
+  const handleAddUpi = (e) => {
+    e.preventDefault();
+    if (!newUpi.includes('@')) {
+      alert('Please enter a valid UPI ID (e.g. username@upi)');
+      return;
+    }
+    setUpiList([...upiList, newUpi]);
+    setNewUpi('');
+    setShowAddUpi(false);
+    alert('UPI ID saved successfully!');
+  };
+
+  const handleDeleteUpi = (index) => {
+    setUpiList(upiList.filter((_, i) => i !== index));
   };
 
   const handleLogout = () => {
@@ -107,16 +130,10 @@ export default function Profile() {
                 >
                   Manage Addresses
                 </button>
-                <button 
-                  onClick={() => setActiveTab('pan')}
-                  className={`text-left px-12 py-2.5 text-xs ${activeTab === 'pan' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
-                >
-                  PAN Card Information
-                </button>
               </div>
             </div>
 
-            {/* Payments Options (Working) */}
+            {/* Payments Options */}
             <div className="border-b border-gray-100">
               <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
                 <CreditCard size={18} className="text-blue-600" />
@@ -145,7 +162,7 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* My Stuff Options (Working) */}
+            {/* My Stuff Options */}
             <div className="border-b border-gray-100">
               <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
                 <Folder size={18} className="text-blue-600" />
@@ -206,7 +223,7 @@ export default function Profile() {
         {/* Right Content Area */}
         <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-[500px]">
           
-          {/* Profile View */}
+          {/* Profile Information */}
           {activeTab === 'profile' && (
             <>
               <div>
@@ -333,46 +350,65 @@ export default function Profile() {
                   )}
                 </div>
               </div>
-
-              {/* FAQs */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="font-bold text-base text-gray-800 mb-4">FAQs</h3>
-                <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
-                  <div>
-                    <p className="font-bold text-gray-800 mb-1">What happens when I update my email address (or mobile number)?</p>
-                    <p>Your login email id (or mobile number) changes, likewise. You'll receive all your account related communication on your updated email address (or mobile number).</p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-800 mb-1">When will my account be updated with the new email address?</p>
-                    <p>It happens as soon as you confirm the verification code sent to your email (or mobile) and save the changes.</p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-2">
-                  <button className="text-left text-xs font-bold text-blue-600 hover:underline">Deactivate Account</button>
-                  <button className="text-left text-xs font-bold text-red-500 hover:underline">Delete Account</button>
-                </div>
-              </div>
             </>
           )}
 
-          {/* Addresses View */}
+          {/* Interactive Saved UPI View */}
+          {activeTab === 'saved-upi' && (
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                <h2 className="text-lg font-bold text-gray-800">Saved VPA / UPI</h2>
+                <button 
+                  onClick={() => setShowAddUpi(!showAddUpi)}
+                  className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                >
+                  <Plus size={14} /> {showAddUpi ? 'Cancel' : 'Add New VPA'}
+                </button>
+              </div>
+
+              {showAddUpi && (
+                <form onSubmit={handleAddUpi} className="max-w-md p-4 bg-slate-50 border border-gray-200 rounded-sm flex flex-col gap-3">
+                  <label className="text-xs font-semibold text-gray-700">Enter VPA / UPI ID</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. mobileNumber@upi / username@okaxis" 
+                    value={newUpi}
+                    onChange={(e) => setNewUpi(e.target.value)}
+                    className="border border-gray-300 p-2.5 rounded-sm text-xs focus:outline-blue-500"
+                    required
+                  />
+                  <button type="submit" className="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-sm hover:bg-blue-700 w-fit">
+                    SAVE VPA
+                  </button>
+                </form>
+              )}
+
+              {upiList.length === 0 ? (
+                <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
+                  You have no saved UPI IDs.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {upiList.map((upi, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border border-gray-200 rounded-sm text-xs text-gray-700 bg-slate-50">
+                      <span className="font-semibold">{upi}</span>
+                      <button onClick={() => handleDeleteUpi(index)} className="text-red-500 hover:text-red-700">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Manage Addresses View */}
           {activeTab === 'addresses' && (
             <div>
               <h2 className="text-lg font-bold text-gray-800 mb-4">Manage Addresses</h2>
               <button className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-sm mb-4">+ ADD A NEW ADDRESS</button>
               <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
                 No addresses saved yet.
-              </div>
-            </div>
-          )}
-
-          {/* PAN View */}
-          {activeTab === 'pan' && (
-            <div>
-              <h2 className="text-lg font-bold text-gray-800 mb-4">PAN Card Information</h2>
-              <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                Please upload your PAN Card details for GST invoicing.
               </div>
             </div>
           )}
@@ -384,16 +420,6 @@ export default function Profile() {
               <div className="p-6 border border-gray-200 rounded-sm bg-slate-50 text-sm text-gray-600 flex justify-between items-center">
                 <span>Current Gift Card Balance:</span>
                 <span className="text-lg font-bold text-green-600">₹0</span>
-              </div>
-            </div>
-          )}
-
-          {/* Saved UPI View */}
-          {activeTab === 'saved-upi' && (
-            <div>
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Saved VPA / UPI</h2>
-              <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                You have no saved UPI IDs.
               </div>
             </div>
           )}

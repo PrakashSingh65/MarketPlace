@@ -15,10 +15,16 @@ import AIAssistant from './components/AIAssistant';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
-import { CartProvider } from './context/CartContext';
+import { CartProvider, useCart } from './context/CartContext';
 import Cart from './pages/cart';
 import Checkout from './pages/Checkout';
 import BuyerDashboard from './pages/BuyerDashboard';
+
+// Checkout route ke liye Wrapper Component jo Context se data pass karega
+function CheckoutPageWrapper() {
+  const { cart, clearCart } = useCart();
+  return <Checkout cart={cart} clearCart={clearCart} />;
+}
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('For You');
@@ -88,7 +94,7 @@ export default function App() {
               path="/checkout"
               element={
                 <ProtectedRoute>
-                  <Checkout />
+                  <CheckoutPageWrapper />
                 </ProtectedRoute>
               }
             />

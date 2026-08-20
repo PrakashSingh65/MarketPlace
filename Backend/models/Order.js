@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema(
   {
+    orderId: {
+      type: String,
+      unique: true,
+      required: true,
+      default: () => 'OD' + Date.now() + Math.floor(1000 + Math.random() * 9000)
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -14,8 +20,13 @@ const orderSchema = new mongoose.Schema(
           ref: 'Product'
         },
         title: { type: String, required: true },
+        image: { type: String },
+        seller: { type: String, default: 'OnestoLabs' },
         price: { type: Number, required: true },
-        quantity: { type: Number, required: true }
+        listingPrice: { type: Number },
+        specialPrice: { type: Number },
+        platformFee: { type: Number, default: 19 },
+        quantity: { type: Number, required: true, default: 1 }
       }
     ],
     shippingAddress: {
@@ -27,7 +38,14 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
+      enum: ['COD', 'Cash On Delivery', 'Online', 'UPI', 'Card'],
       default: 'COD'
+    },
+    pricing: {
+      listingPrice: { type: Number, default: 0 },
+      specialPrice: { type: Number, default: 0 },
+      totalPlatformFee: { type: Number, default: 0 },
+      totalDiscount: { type: Number, default: 0 }
     },
     totalAmount: {
       type: Number,
@@ -35,9 +53,17 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Pending'
-    }
+      enum: ['Order Confirmed', 'Pending', 'Processing', 'Shipped', 'Out For Delivery', 'Delivered', 'Cancelled'],
+      default: 'Order Confirmed'
+    },
+    timeline: [
+      {
+        title: { type: String },
+        date: { type: String },
+        description: { type: String },
+        completed: { type: Boolean, default: false }
+      }
+    ]
   },
   { timestamps: true }
 );

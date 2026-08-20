@@ -12,9 +12,10 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Main API Route Mounting
+// Main API Route Mounting (Includes /api/orders, /api/auth, etc.)
 app.use('/api', mainRouter);
 
 // Root Route
@@ -27,6 +28,15 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.error(' Internal Server Error:', err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Database Connection & Server Startup
@@ -37,6 +47,6 @@ connectDB()
     });
   })
   .catch((err) => {
-    console.error('❌ Database connection failed:', err);
+    console.error(' Database connection failed:', err);
     process.exit(1);
   });

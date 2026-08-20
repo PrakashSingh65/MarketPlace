@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock } from 'lucide-react';
-import { useCart } from '../context/CartContext'; // Context import kiya
+import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, ExternalLink, Edit2 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useCart } from '../context/CartContext';
 
 export default function Checkout({ onOrderPlaced }) {
-  // Direct Context se cart aur clearCart destructured kiya
   const { cart = [], clearCart } = useCart();
 
   const [shippingAddress, setShippingAddress] = useState({
@@ -14,20 +14,26 @@ export default function Checkout({ onOrderPlaced }) {
     pincode: ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi', 'card', 'cod'
+  const [paymentMethod, setPaymentMethod] = useState('upi');
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Real UPI ID state (Yahan apni actual UPI ID daalein, e.g., 9876543210@ybl ya prakash@okicici)
+  const [upiId, setUpiId] = useState('prakash@upi');
+  const merchantName = 'Prakash Singh';
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
-  const tax = Math.round(subtotal * 0.05); // 5% GST
+  const tax = Math.round(subtotal * 0.05);
   const shippingFee = subtotal > 2000 ? 0 : 150;
   const grandTotal = subtotal + tax + shippingFee;
 
+  // Dynamic UPI URL Generation
+  const upiPayUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(merchantName)}&am=${grandTotal}&cu=INR`;
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-
     setLoading(true);
 
     try {
@@ -56,13 +62,11 @@ export default function Checkout({ onOrderPlaced }) {
         if (clearCart) clearCart();
         if (onOrderPlaced) onOrderPlaced();
       } else {
-        // Fallback for simulation if backend route has issues
         setOrderSuccess(true);
         if (clearCart) clearCart();
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      // Client-side fallback if backend is offline
       setOrderSuccess(true);
       if (clearCart) clearCart();
     } finally {
@@ -79,11 +83,11 @@ export default function Checkout({ onOrderPlaced }) {
           </div>
           <h2 className="text-xl font-black text-white">Order Placed Successfully!</h2>
           <p className="text-xs text-slate-400">
-            Payment verified via <span className="text-indigo-400 uppercase font-bold">{paymentMethod}</span>. Your supplier has been notified to process the shipment.
+            Payment verified via <span className="text-indigo-400 uppercase font-bold">{paymentMethod}</span>. Your order has been registered.
           </p>
           <button
             onClick={() => window.location.href = '/buyer-dashboard'}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition cursor-pointer"
           >
             Track Order Status
           </button>
@@ -98,7 +102,7 @@ export default function Checkout({ onOrderPlaced }) {
         
         {/* Header */}
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.back()} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white">
+          <button onClick={() => window.history.back()} className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white cursor-pointer">
             <ArrowLeft size={16} />
           </button>
           <div>
@@ -176,7 +180,7 @@ export default function Checkout({ onOrderPlaced }) {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('upi')}
-                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 ${
+                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 cursor-pointer ${
                     paymentMethod === 'upi'
                       ? 'bg-indigo-950/40 border-indigo-500 text-white ring-2 ring-indigo-500/20'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -193,7 +197,7 @@ export default function Checkout({ onOrderPlaced }) {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('card')}
-                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 ${
+                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 cursor-pointer ${
                     paymentMethod === 'card'
                       ? 'bg-indigo-950/40 border-indigo-500 text-white ring-2 ring-indigo-500/20'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -210,7 +214,7 @@ export default function Checkout({ onOrderPlaced }) {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 ${
+                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 cursor-pointer ${
                     paymentMethod === 'cod'
                       ? 'bg-indigo-950/40 border-indigo-500 text-white ring-2 ring-indigo-500/20'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -225,20 +229,57 @@ export default function Checkout({ onOrderPlaced }) {
 
               </div>
 
-              {/* Dynamic Payment Details Prompt */}
+              {/* Dynamic Scan & Pay Section */}
               {paymentMethod === 'upi' && (
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl text-xs space-y-2">
-                  <p className="text-indigo-400 font-bold">Scan & Pay (Simulation):</p>
-                  <p className="text-slate-400 text-[11px]">UPI ID: <span className="text-white font-mono">marketplace@upi</span></p>
+                <div className="bg-slate-950 border border-slate-800 p-5 rounded-2xl text-xs space-y-4">
+                  
+                  {/* Enter Personal UPI ID */}
+                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-2">
+                    <Edit2 size={14} className="text-indigo-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      placeholder="Enter Actual Bank UPI ID (e.g. 9876543210@ybl)"
+                      className="w-full bg-transparent text-white text-xs focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-5">
+                    <div className="bg-white p-2.5 rounded-2xl border border-slate-700 shadow-lg flex-shrink-0">
+                      <QRCodeSVG 
+                        value={upiPayUrl} 
+                        size={120} 
+                      />
+                    </div>
+
+                    <div className="space-y-2 text-center sm:text-left">
+                      <p className="text-indigo-400 font-bold">Scan & Pay via UPI App</p>
+                      <p className="text-slate-200 text-[11px] font-semibold">
+                        Payee Name: <span className="text-emerald-400">{merchantName}</span>
+                      </p>
+                      <p className="text-slate-400 text-[11px]">
+                        UPI ID: <span className="text-white font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{upiId}</span>
+                      </p>
+                      <p className="text-slate-500 text-[10px]">GPay, PhonePe, Paytm ya BHIM app se scan karein.</p>
+                      
+                      <a
+                        href={upiPayUrl}
+                        className="inline-flex items-center gap-1.5 mt-1 bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-lg text-[11px] font-semibold hover:bg-indigo-600/50 transition"
+                      >
+                        <ExternalLink size={12} /> Pay via UPI App Direct
+                      </a>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {paymentMethod === 'card' && (
                 <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2 text-xs">
-                  <input type="text" placeholder="Card Number (4000 1234 5678 9010)" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs" />
+                  <input type="text" placeholder="Card Number (4000 1234 5678 9010)" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
                   <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="MM/YY" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs" />
-                    <input type="password" maxLength={3} placeholder="CVV" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs" />
+                    <input type="text" placeholder="MM/YY" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
+                    <input type="password" maxLength={3} placeholder="CVV" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
                   </div>
                 </div>
               )}

@@ -11,8 +11,16 @@ const router = express.Router();
 // API Sub-routes Mapping
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
-router.use('/fabrics', productRoutes);
+router.use('/fabrics', productRoutes); // Alias for products
 router.use('/orders', orderRoutes);
 router.use('/cart', cartRoutes);
+
+// Unmatched API Sub-routes Handler (/api/*)
+router.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API Endpoint ${req.originalUrl} not found`
+  });
+});
 
 export default router;

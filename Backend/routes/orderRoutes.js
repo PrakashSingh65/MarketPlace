@@ -1,13 +1,18 @@
-const express = require('express');
-const router = express.Router();
-const Order = require('../models/Order'); // Aapka Order Model
-const { protect } = require('../middleware/authMiddleware'); // Auth Middleware
+import express from 'express';
+import Order from '../models/Order.js'; // Extension .js zaroori hai
+import { protect } = require middleware standard path adjustment:
+// import { protect } from '../middleware/authMiddleware.js';
 
-// 1. GET /api/orders/my-orders (Buyer ke specific orders fetch karne ke liye)
-router.get('/my-orders', protect, async (req, res) => {
+const router = express.Router();
+
+// 1. GET /api/orders/my-orders (Buyer Dashboard Orders Fetch)
+router.get('/my-orders', async (req, res) => {
   try {
-    // Current logged-in user ke ID se orders dhundhein
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    // Agar Auth Middleware Active Hai:
+    // const userId = req.user ? req.user._id : null;
+    // const query = userId ? { user: userId } : {};
+    
+    const orders = await Order.find({}).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -18,36 +23,49 @@ router.get('/my-orders', protect, async (req, res) => {
     console.error('Error fetching buyer orders:', error);
     res.status(500).json({
       success: false,
-      message: 'Server Error: Orders fetch nahi ho paye'
+      message: 'Server Error: Orders fetch nahi ho paye',
+      error: error.message
     });
   }
 });
 
-// 2. POST /api/orders (Naya order create karne ke liye - Checkout process)
-router.post('/', protect, async (req, res) => {
+// 2. POST /api/orders (Checkout Process)
+router.post('/', async (req, res) => {
   try {
     const { items, shippingAddress, paymentMethod, paymentStatus, totalAmount } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ message: 'Cart khali hai' });
+      return res.status(400).json({
+        success: false,
+        message: 'Cart empty hai'
+      });
     }
 
     const newOrder = new Order({
-      user: req.user._id,
+      user: req.user ? req.user._id : null,
       items,
       shippingAddress,
-      paymentMethod,
-      paymentStatus: paymentStatus || 'Pending',
-      totalAmount,
+      paymentMethod: paymentMethod || 'upi',
+      paymentStatus: paymentStatus || 'Paid',
+      totalAmount: totalAmount || 0,
       status: 'Pending'
     });
 
     const savedOrder = await newOrder.save();
-    res.status(201).json({ success: true, order: savedOrder });
+
+    res.status(201).json({
+      success: true,
+      message: 'Order placed successfully',
+      order: savedOrder
+    });
   } catch (error) {
     console.error('Error placing order:', error);
-    res.status(500).json({ success: false, message: 'Order place nahi ho paya' });
+    res.status(500).json({
+      success: false,
+      message: 'Order place nahi ho paya',
+      error: error.message
+    });
   }
 });
 
-module.exports = router;
+export default router;

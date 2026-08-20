@@ -19,6 +19,7 @@ import { CartProvider, useCart } from './context/CartContext';
 import Cart from './pages/cart';
 import Checkout from './pages/Checkout';
 import BuyerDashboard from './pages/BuyerDashboard';
+import OrderDetails from './pages/OrderDetails'; // 🟢 Added OrderDetails Import
 
 // Checkout route ke liye Wrapper Component jo Context se data pass karega
 function CheckoutPageWrapper() {
@@ -61,6 +62,10 @@ export default function App() {
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/onboarding" element={<Onboarding />} />
+
+            {/* Order Details & Tracking Routes */}
+            <Route path="/order-details" element={<OrderDetails />} />
+            <Route path="/order-details/:orderId" element={<OrderDetails />} />
 
             {/* Dropdown Navigation Routes */}
             <Route path="/orders" element={<BuyerDashboard />} />

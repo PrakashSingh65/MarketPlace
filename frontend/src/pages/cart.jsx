@@ -7,25 +7,32 @@ export default function Cart() {
   const { cart = [], removeFromCart, updateQuantity } = useCart();
   const navigate = useNavigate();
 
-  // Quantity Change Handler (Safely updates context)
+  // Har product ke liye platform fee setup (Default ₹19 per item quantity)
+  const PER_ITEM_PLATFORM_FEE = 19;
+
   const handleQuantityChange = (itemId, currentQty, delta) => {
     const newQty = currentQty + delta;
-    if (newQty >= 1) {
-      if (updateQuantity) {
-        updateQuantity(itemId, newQty);
-      }
+    if (newQty >= 1 && updateQuantity) {
+      updateQuantity(itemId, newQty);
     }
   };
 
-  // Dynamic Price Calculations
+  // Pricing Calculations
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
+  
   const totalMRP = cart.reduce((sum, item) => {
     const original = item.originalPrice || Math.round(Number(item.price) * 1.5);
     return sum + (original * (item.quantity || 1));
   }, 0);
+
+  // Total Platform Fee = (Cart ke total items quantity × Per Item Fee)
+  const totalPlatformFee = cart.reduce((sum, item) => {
+    const itemFee = item.platformFee ?? PER_ITEM_PLATFORM_FEE;
+    return sum + (itemFee * (item.quantity || 1));
+  }, 0);
+
   const totalDiscount = totalMRP - subtotal;
-  const platformFee = cart.length > 0 ? 19 : 0;
-  const grandTotal = subtotal + platformFee;
+  const grandTotal = subtotal + totalPlatformFee;
 
   if (cart.length === 0) {
     return (
@@ -77,6 +84,9 @@ export default function Cart() {
               const currentQty = item.quantity || 1;
               const originalPrice = item.originalPrice || Math.round(Number(item.price) * 1.5);
               const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);
+              
+              // Per Product Platform Fee calculation
+              const itemPlatformFee = (item.platformFee ?? PER_ITEM_PLATFORM_FEE) * currentQty;
 
               return (
                 <div key={itemId} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-lg">
@@ -98,12 +108,17 @@ export default function Cart() {
                       </h3>
                       <p className="text-xs text-slate-500">Standard Retail Pack</p>
 
-                      {/* Pricing */}
-                      <div className="flex items-center gap-2 pt-1">
+                      {/* Pricing & Individual Platform Fee */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
                         <span className="text-base sm:text-lg font-black text-white">₹{item.price}</span>
                         <span className="text-xs text-slate-500 line-through">₹{originalPrice}</span>
                         <span className="text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2 py-0.5 rounded-md">
                           {discountPercent}% OFF
+                        </span>
+                        
+                        {/* 🔹 Per Product Platform Fee Badge */}
+                        <span className="text-[11px] font-semibold text-indigo-300 bg-indigo-950/60 border border-indigo-800/50 px-2 py-0.5 rounded-md ml-auto">
+                          Platform Fee: ₹{itemPlatformFee}
                         </span>
                       </div>
                     </div>
@@ -112,7 +127,7 @@ export default function Cart() {
                   {/* Actions & Quantity Counter */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs">
                     
-                    {/* Reliable + / - Quantity Controls */}
+                    {/* Quantity Controls */}
                     <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
                       <span className="text-slate-400 font-medium mr-1">Qty:</span>
                       <button
@@ -157,7 +172,7 @@ export default function Cart() {
 
           </div>
 
-          {/* RIGHT: Modern Dark Order Summary */}
+          {/* RIGHT: Order Summary */}
           <div className="lg:col-span-4">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 sticky top-6 shadow-xl">
               <h2 className="text-sm font-bold text-white border-b border-slate-800 pb-3">Price Details</h2>
@@ -173,9 +188,10 @@ export default function Cart() {
                   <span>- ₹{totalDiscount.toLocaleString()}</span>
                 </div>
 
+                {/* Combined Platform Fee of All Products */}
                 <div className="flex justify-between text-slate-400">
-                  <span>Platform Fee</span>
-                  <span className="text-slate-200">₹{platformFee}</span>
+                  <span>Total Platform Fee ({cart.reduce((qty, i) => qty + (i.quantity || 1), 0)} items)</span>
+                  <span className="text-indigo-400 font-semibold">₹{totalPlatformFee}</span>
                 </div>
 
                 <div className="border-t border-slate-800 pt-3 flex justify-between font-extrabold text-sm text-white">

@@ -1,24 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// 👈 Yahan 'export' add karein
-export const CartContext = createContext(); 
+const CartContext = createContext();
 
-export function CartProvider({ children }) {
+export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem('lelobhai_cart');
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    localStorage.setItem('lelobhai_cart', JSON.stringify(cart));
   }, [cart]);
 
+  // Add to Cart
   const addToCart = (product) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
+      const id = product._id || product.id;
+      const existingItem = prevCart.find((item) => (item._id || item.id) === id);
+
       if (existingItem) {
         return prevCart.map((item) =>
-          item.id === product.id
+          (item._id || item.id) === id
             ? { ...item, quantity: (item.quantity || 1) + 1 }
             : item
         );
@@ -27,17 +29,30 @@ export function CartProvider({ children }) {
     });
   };
 
+  // Remove from Cart
   const removeFromCart = (id) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
+    setCart((prevCart) => prevCart.filter((item) => (item._id || item.id) !== id));
+  };
+
+  // 🔥 Fix Quantity Update Handler
+  const updateQuantity = (id, newQty) => {
+    if (newQty < 1) return;
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        (item._id || item.id) === id ? { ...item, quantity: newQty } : item
+      )
+    );
   };
 
   const clearCart = () => setCart([]);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider
+      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}
+    >
       {children}
     </CartContext.Provider>
   );
-}
+};
 
 export const useCart = () => useContext(CartContext);

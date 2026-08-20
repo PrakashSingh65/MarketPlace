@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   ArrowLeft, ShoppingCart, ShieldCheck, Truck, Sparkles, 
-  Layers, Package, Tag, Palette 
+  Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
-import { CartContext } from '../context/CartContext';
+import { useCart } from '../context/CartContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Safe CartContext Usage
-  const cartContext = useContext(CartContext);
-  const addToCart = cartContext?.addToCart;
+  // Clean useCart hook usage
+  const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
@@ -90,7 +89,7 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <button 
           onClick={() => navigate(-1)} 
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-xs font-semibold transition"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-xs font-semibold transition cursor-pointer"
         >
           <ArrowLeft size={16} /> Back to Marketplace
         </button>
@@ -154,7 +153,7 @@ export default function ProductDetail() {
                   key={idx}
                   onClick={() => setSelectedColor(hex)}
                   style={{ backgroundColor: hex }}
-                  className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                  className={`w-8 h-8 rounded-full border-2 transition-transform cursor-pointer ${
                     selectedColor === hex ? 'border-indigo-400 scale-110 shadow-lg' : 'border-slate-800 hover:scale-105'
                   }`}
                 />
@@ -167,7 +166,7 @@ export default function ProductDetail() {
             <div className="flex gap-3">
               <button
                 onClick={handleAddToCart}
-                className={`flex-1 border py-3.5 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2 ${
+                className={`flex-1 border py-3.5 rounded-2xl font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer ${
                   added 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
                     : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-white'
@@ -178,7 +177,7 @@ export default function ProductDetail() {
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-2xl font-bold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-2xl font-bold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles size={16} /> Request Bulk Quote
               </button>

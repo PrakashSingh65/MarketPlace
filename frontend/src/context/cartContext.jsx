@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const CartContext = createContext();
+// Exporting CartContext to prevent import errors
+export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
@@ -12,7 +13,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('lelobhai_cart', JSON.stringify(cart));
   }, [cart]);
 
-  // Add to Cart
+  // Add Item to Cart
   const addToCart = (product) => {
     setCart((prevCart) => {
       const id = product._id || product.id;
@@ -29,12 +30,12 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  // Remove from Cart
+  // Remove Item from Cart
   const removeFromCart = (id) => {
     setCart((prevCart) => prevCart.filter((item) => (item._id || item.id) !== id));
   };
 
-  // 🔥 Fix Quantity Update Handler
+  // Update Item Quantity (Fixes Quantity + / - issue)
   const updateQuantity = (id, newQty) => {
     if (newQty < 1) return;
     setCart((prevCart) =>
@@ -44,6 +45,7 @@ export const CartProvider = ({ children }) => {
     );
   };
 
+  // Clear Cart
   const clearCart = () => setCart([]);
 
   return (

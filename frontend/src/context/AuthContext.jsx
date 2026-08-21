@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
@@ -7,9 +7,10 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // API Base URL - backend ke /api prefix ke saath
+  // Base API URL
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+  // Restore session on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (e) {
+        console.error('Failed to parse stored user data:', e);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
@@ -26,14 +28,43 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData, authToken) => {
+  // Set Local Session State & LocalStorage
+  const handleAuthSuccess = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('token', authToken);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  // 👈 Register Function (Fixed URL path: /api/auth/register)
+  // Login Function (API Call)
+  const login = async (credentials) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      if (data.token && data.user) {
+        handleAuthSuccess(data.user, data.token);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Login Error:', error.message);
+      throw error;
+    }
+  };
+
+  // Register Function
   const register = async (formData) => {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -50,9 +81,9 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Agar register hone ke baad direct login karwana ho
+      // Auto-login after registration
       if (data.token && data.user) {
-        login(data.user, data.token);
+        handleAuthSuccess(data.user, data.token);
       }
 
       return data;
@@ -66,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('cart');
@@ -75,8 +106,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        register,
+        logout,
+        loading,
+        isAuthenticated: !!token && !!user,
+        isSupplier: user?.role === 'SUPPLIER',
+        isBuyer: user?.role === 'BUYER'
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
+};
+
+// Easy Usage Custom Hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

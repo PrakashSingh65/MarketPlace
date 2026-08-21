@@ -21,7 +21,6 @@ export default function SupplierDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form Fields State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('fashion');
@@ -83,6 +82,11 @@ export default function SupplierDashboard() {
     setImagePreview(null);
   };
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -99,7 +103,7 @@ export default function SupplierDashboard() {
       formData.append('moq', moq);
       formData.append('stock', stock);
       formData.append('stockMeters', stock);
-      
+
       if (gsm) formData.append('gsm', gsm);
       if (composition) formData.append('composition', composition);
       if (colors) {
@@ -124,8 +128,7 @@ export default function SupplierDashboard() {
 
       if (res.ok) {
         alert('Product uploaded successfully!');
-        setIsModalOpen(false);
-        resetForm();
+        handleCloseModal();
         fetchProducts();
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -145,7 +148,6 @@ export default function SupplierDashboard() {
   return (
     <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
@@ -168,7 +170,6 @@ export default function SupplierDashboard() {
         </button>
       </div>
 
-      {/* Active Products */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
         <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
 
@@ -205,7 +206,6 @@ export default function SupplierDashboard() {
         )}
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',
@@ -215,12 +215,11 @@ export default function SupplierDashboard() {
           <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>Upload Product</h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+              <button onClick={handleCloseModal} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* Image Input */}
               <div style={{ border: '2px dashed #334155', padding: '16px', borderRadius: '12px', textAlign: 'center', backgroundColor: '#020617' }}>
                 <input type="file" accept="image/*" required onChange={handleImageChange} style={{ fontSize: '12px', color: '#94a3b8' }} />
                 {imagePreview && (
@@ -235,7 +234,7 @@ export default function SupplierDashboard() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Denim Jacket / iPhone 15"
+                  placeholder="e.g. Denim Fabric / Cotton Shirts"
                   style={inputStyle}
                 />
               </div>
@@ -251,7 +250,6 @@ export default function SupplierDashboard() {
                 />
               </div>
 
-              {/* Category & Sub-Category */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Category</label>
@@ -274,7 +272,6 @@ export default function SupplierDashboard() {
                 </div>
               </div>
 
-              {/* Price & Stock */}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Price (₹)</label>
@@ -299,9 +296,42 @@ export default function SupplierDashboard() {
                     style={inputStyle}
                   />
                 </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>MOQ</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={moq}
+                    onChange={(e) => setMoq(e.target.value)}
+                    placeholder="50"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
 
-              {/* Colors */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>GSM (Optional)</label>
+                  <input
+                    type="text"
+                    value={gsm}
+                    onChange={(e) => setGsm(e.target.value)}
+                    placeholder="e.g. 220"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Composition (Optional)</label>
+                  <input
+                    type="text"
+                    value={composition}
+                    onChange={(e) => setComposition(e.target.value)}
+                    placeholder="100% Cotton"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label style={labelStyle}>Colors (comma-separated)</label>
                 <input

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
-export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
+const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'Electronics',
+    title: '',
     price: '',
+    category: '',
+    fabricType: '',
     stock: '',
     description: '',
     imageUrl: ''
@@ -13,152 +15,201 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
 
   if (!isOpen) return null;
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      // Backend API URL match karein
+      const response = await axios.post('http://localhost:5000/api/products', formData);
       
-      // Backend API Call to Save Product
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        alert('Product successfully added!');
-        setFormData({ name: '', category: 'Electronics', price: '', stock: '', description: '', imageUrl: '' });
-        if (onProductAdded) onProductAdded();
+      if (response.data.success) {
+        alert('Product successfully add ho gaya!');
+        if (onProductAdded) onProductAdded(response.data.product);
         onClose();
-      } else {
-        alert('Failed to add product. Please check details.');
       }
-    } catch (err) {
-      console.error('Error adding product:', err);
-      alert('Something went wrong!');
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert(error.response?.data?.message || 'Product add karne me issue aaya');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
-        
-        <div className="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
-          <h2 className="text-lg font-bold text-white">Add New Product</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
+        <div style={styles.header}>
+          <h2>Add New Product</h2>
+          <button style={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          
-          {/* Product Name */}
-          <div>
-            <label className="block text-slate-400 font-medium mb-1">Product Title / Name</label>
-            <input 
-              type="text" 
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <input
+            type="text"
+            name="title"
+            placeholder="Product Name / Title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            style={styles.input}
+          />
+
+          <div style={styles.row}>
+            <input
+              type="number"
+              name="price"
+              placeholder="Price (₹)"
+              value={formData.price}
+              onChange={handleChange}
               required
-              placeholder="e.g. Wireless Bluetooth Headphones"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
+              style={styles.input}
+            />
+            <input
+              type="number"
+              name="stock"
+              placeholder="Stock Quantity"
+              value={formData.stock}
+              onChange={handleChange}
+              required
+              style={styles.input}
             />
           </div>
 
-          {/* Category & Price */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-400 font-medium mb-1">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
-              >
-                <option value="Electronics">Electronics</option>
-                <option value="Fashion">Fashion</option>
-                <option value="Home">Home & Kitchen</option>
-                <option value="Beauty">Beauty & Health</option>
-                <option value="Appliances">Appliances</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-400 font-medium mb-1">Price (₹)</label>
-              <input 
-                type="number" 
-                required
-                placeholder="1499"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
-              />
-            </div>
+          <div style={styles.row}>
+            <input
+              type="text"
+              name="category"
+              placeholder="Category (e.g. Cotton, Silk)"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              style={styles.input}
+            />
+            <input
+              type="text"
+              name="fabricType"
+              placeholder="Fabric Type"
+              value={formData.fabricType}
+              onChange={handleChange}
+              style={styles.input}
+            />
           </div>
 
-          {/* Stock & Image URL */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-400 font-medium mb-1">Stock Quantity</label>
-              <input 
-                type="number" 
-                required
-                placeholder="50"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
-              />
-            </div>
+          <input
+            type="url"
+            name="imageUrl"
+            placeholder="Image URL"
+            value={formData.imageUrl}
+            onChange={handleChange}
+            style={styles.input}
+          />
 
-            <div>
-              <label className="block text-slate-400 font-medium mb-1">Image URL</label>
-              <input 
-                type="url" 
-                required
-                placeholder="https://example.com/image.jpg"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
-              />
-            </div>
-          </div>
+          <textarea
+            name="description"
+            placeholder="Product Description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="3"
+            style={styles.textarea}
+          />
 
-          {/* Description */}
-          <div>
-            <label className="block text-slate-400 font-medium mb-1">Product Description</label>
-            <textarea 
-              rows="3"
-              placeholder="Enter item specs and details..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-blue-500"
-            ></textarea>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700"
-            >
+          <div style={styles.actions}>
+            <button type="button" onClick={onClose} style={styles.cancelBtn}>
               Cancel
             </button>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} style={styles.submitBtn}>
               {loading ? 'Adding...' : 'Add Product'}
             </button>
           </div>
-
         </form>
       </div>
     </div>
   );
-}
+};
+
+const styles = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  modal: {
+    backgroundColor: '#fff',
+    padding: '24px',
+    borderRadius: '8px',
+    width: '90%',
+    maxWidth: '500px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px'
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer'
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  row: {
+    display: 'flex',
+    gap: '12px'
+  },
+  input: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    boxSizing: 'border-box'
+  },
+  textarea: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    boxSizing: 'border-box'
+  },
+  actions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '12px',
+    marginTop: '12px'
+  },
+  cancelBtn: {
+    padding: '10px 16px',
+    backgroundColor: '#6c757d',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  submitBtn: {
+    padding: '10px 16px',
+    backgroundColor: '#0d6efd',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  }
+};
+
+export default AddProductModal;

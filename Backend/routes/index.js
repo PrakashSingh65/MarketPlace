@@ -13,7 +13,7 @@ router.use('/fabrics', productRoutes);
 router.use('/orders', orderRoutes);
 router.use('/cart', cartRoutes);
 
-router.use('*', (req, res) => {
+router.use('/{*path}', (req, res) => {
   res.status(404).json({
     success: false,
     message: `API Endpoint ${req.originalUrl} not found`

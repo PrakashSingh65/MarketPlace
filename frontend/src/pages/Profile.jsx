@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -30,23 +30,28 @@ export default function Profile() {
   const [newUpi, setNewUpi] = useState('');
   const [showAddUpi, setShowAddUpi] = useState(false);
 
-  const currentUser = user || {
-    name: 'Prakash Singh',
-    email: 'prakashsingh03102@gmail.com',
-    phone: '+919236894256',
-    gender: 'Male'
-  };
-
-  const nameParts = (currentUser.name || 'Prakash Singh').split(' ');
-  
-  // User Form State
+  // User Form State initialized with fallback values
   const [formData, setFormData] = useState({
-    firstName: nameParts[0] || 'Prakash',
-    lastName: nameParts.slice(1).join(' ') || 'Singh',
-    gender: currentUser.gender || 'Male',
-    email: currentUser.email || 'prakashsingh03102@gmail.com',
-    phone: currentUser.phone || '+919236894256'
+    firstName: 'Prakash',
+    lastName: 'Singh',
+    gender: 'Male',
+    email: 'prakashsingh03102@gmail.com',
+    phone: '+919236894256'
   });
+
+  // Sync state if user context updates from API
+  useEffect(() => {
+    if (user) {
+      const nameParts = (user.name || 'Prakash Singh').split(' ');
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        gender: user.gender || 'Male',
+        email: user.email || '',
+        phone: user.phone || ''
+      });
+    }
+  }, [user]);
 
   // Save handler for profile updates
   const handleSave = (type) => {
@@ -54,7 +59,7 @@ export default function Profile() {
     if (type === 'email') setIsEditingEmail(false);
     if (type === 'phone') setIsEditingPhone(false);
     
-    // Yahan aap backend API call integrate kar sakte hain
+    // Backend API integration logic goes here
     alert(`${type.toUpperCase()} details saved successfully!`);
   };
 

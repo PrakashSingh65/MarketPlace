@@ -1,6 +1,5 @@
 import Order from '../models/Order.js';
 
-// 1. Create New Order (Checkout se call hoga)
 export const createOrder = async (req, res) => {
   try {
     const { items, shippingAddress, paymentMethod, userId, pricing } = req.body;
@@ -9,7 +8,6 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'No items in order' });
     }
 
-    // Auto-calculate Pricing & Platform Fees if not sent from frontend
     const totalPlatformFee = items.reduce((sum, item) => sum + ((item.platformFee || 19) * (item.quantity || 1)), 0);
     const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
     const grandTotal = subtotal + totalPlatformFee;
@@ -21,7 +19,6 @@ export const createOrder = async (req, res) => {
       totalDiscount: pricing?.totalDiscount || 0
     };
 
-    // Auto-generate Status Timeline Steps
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
     const timeline = [
       { title: 'Order Confirmed', date: currentDate, description: 'Order successfully placed', completed: true },
@@ -52,12 +49,10 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// 2. Get Single Order Details (Live Order Tracking Page ke liye)
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check by custom orderId (e.g., OD438380...) OR Mongo _id
     const order = await Order.findOne({
       $or: [{ orderId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }]
     }).populate('user', 'name email');
@@ -72,7 +67,6 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// 3. Get All Orders (Supplier / Admin View)
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 }).populate('user', 'name email');
@@ -82,7 +76,6 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-// 4. Update Order Status (Supplier status update karega toh timeline auto-update hogi)
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -94,7 +87,6 @@ export const updateOrderStatus = async (req, res) => {
 
     order.status = status;
 
-    // Timeline status auto sync logic
     const statusLevels = ['Order Confirmed', 'Shipped', 'Out For Delivery', 'Delivered'];
     const currentLevelIndex = statusLevels.indexOf(status);
 
@@ -112,7 +104,6 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-// 5. Cancel Order (User / Buyer cancel karega)
 export const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;

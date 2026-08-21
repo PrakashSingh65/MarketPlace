@@ -14,7 +14,9 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  
+  // 🟢 FIXED: '/api' suffix baseline URL me add kar diya hai
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,6 +24,7 @@ export default function Register() {
     setError('');
 
     try {
+      // Hit URL will be: http://localhost:5000/api/auth/register
       const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,7 +37,7 @@ export default function Register() {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // 🟢 1. User token aur details local storage me save karein
+      // User token aur details local storage me save karein
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
@@ -42,7 +45,7 @@ export default function Register() {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
 
-      // 🟢 2. Role ke mutabiq right page par navigate karein
+      // Role ke mutabiq right page par navigate karein
       if (role === 'BUYER') {
         navigate('/onboarding');
       } else {

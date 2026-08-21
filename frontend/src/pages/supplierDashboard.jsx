@@ -34,22 +34,20 @@ export default function SupplierDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const apiUrl = import.meta.env.VITE_API_URL || '';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const handleCategoryChange = (e) => {
-    const selectedCat = e.target.value;
-    setCategory(selectedCat);
-    const subList = CATEGORY_MAP[selectedCat] || [];
-    setSubCategory(subList.length > 0 ? subList[0] : '');
-  };
-
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/products`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/api/products`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setProducts(Array.isArray(data) ? data : []);
@@ -57,6 +55,13 @@ export default function SupplierDashboard() {
     } catch (err) {
       console.error("Fetch products error:", err);
     }
+  };
+
+  const handleCategoryChange = (e) => {
+    const selectedCat = e.target.value;
+    setCategory(selectedCat);
+    const subList = CATEGORY_MAP[selectedCat] || [];
+    setSubCategory(subList.length > 0 ? subList[0] : '');
   };
 
   const handleImageChange = (e) => {
@@ -142,12 +147,36 @@ export default function SupplierDashboard() {
     }
   };
 
+  // Product Delete Functionality
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/api/products/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      if (res.ok) {
+        setProducts((prev) => prev.filter((item) => (item._id || item.id) !== id));
+      } else {
+        alert("Failed to delete product");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
+  };
+
   const labelStyle = { fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' };
   const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#020617', border: '1px solid #334155', color: '#fff', boxSizing: 'border-box', outline: 'none' };
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
 
+      {/* Header Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
@@ -170,6 +199,7 @@ export default function SupplierDashboard() {
         </button>
       </div>
 
+      {/* Active Products Catalog */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
         <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
 
@@ -178,34 +208,67 @@ export default function SupplierDashboard() {
             No products added yet. Click "+ Add New Product" button above.
           </p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-            {products.map((p) => (
-              <div key={p._id || p.id} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-                <img
-                  src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150'}
-                  alt={p.title}
-                  style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
-                />
-                <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                <div style={{ display: 'flex', gap: '4px', margin: '4px 0', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
-                    {p.category}
-                  </span>
-                  {p.subCategory && (
-                    <span style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px' }}>
-                      {p.subCategory}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            {products.map((p) => {
+              const productId = p._id || p.id;
+              return (
+                <div key={productId} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b', position: 'relative' }}>
+                  
+                  {/* Delete Icon */}
+                  <button
+                    onClick={() => handleDeleteProduct(productId)}
+                    title="Delete Product"
+                    style={{
+                      position: 'absolute',
+                      top: '18px',
+                      right: '18px',
+                      background: 'rgba(239, 68, 68, 0.8)',
+                      border: 'none',
+                      color: '#fff',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    ✕
+                  </button>
+
+                  <img
+                    src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150'}
+                    alt={p.title}
+                    style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                  <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                  
+                  <div style={{ display: 'flex', gap: '4px', margin: '4px 0', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                      {p.category}
                     </span>
-                  )}
+                    {p.subCategory && (
+                      <span style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px' }}>
+                        {p.subCategory}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                    <p style={{ color: '#818cf8', fontSize: '13px', fontWeight: 'bold' }}>
+                      ₹{p.pricePerMeter ?? p.price}
+                    </p>
+                    {p.stock && (
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>Stock: {p.stock}</span>
+                    )}
+                  </div>
                 </div>
-                <p style={{ color: '#818cf8', fontSize: '12px', fontWeight: 'bold' }}>
-                  ₹{p.pricePerMeter ?? p.price}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
+      {/* Upload Modal */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',

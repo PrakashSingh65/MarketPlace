@@ -1,27 +1,35 @@
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
+// Layout Components
 import Navbar from './components/Navbar';
 import CategoryBar from './components/CategoryBar';
 import Footer from './components/Footer';
+import AIAssistant from './components/AIAssistant';
+
+// Auth Pages
 import Login from './pages/login';
 import Register from './pages/register';
-import Marketplace from './pages/marketplace';
-import SupplierDashboard from './pages/supplierDashboard';
-import LandingPage from './pages/LandingPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import Home from './pages/Home';
-import AIAssistant from './components/AIAssistant';
-import ProductDetail from './pages/ProductDetail';
-import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
-import { CartProvider, useCart } from './context/CartContext';
+
+// Core Pages
+import Home from './pages/Home';
+import Marketplace from './pages/marketplace';
+import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/cart';
 import Checkout from './pages/Checkout';
-import BuyerDashboard from './pages/BuyerDashboard';
-import OrderDetails from './pages/OrderDetails'; // 🟢 Added OrderDetails Import
 
-// Checkout route ke liye Wrapper Component jo Context se data pass karega
+// Dashboards & Profile
+import SupplierDashboard from './pages/supplierDashboard';
+import BuyerDashboard from './pages/BuyerDashboard';
+import OrderDetails from './pages/OrderDetails';
+import Profile from './pages/Profile';
+
+// Context & Protection
+import { CartProvider, useCart } from './context/CartContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Checkout Route Wrapper Component
 function CheckoutPageWrapper() {
   const { cart, clearCart } = useCart();
   return <Checkout cart={cart} clearCart={clearCart} />;
@@ -32,43 +40,35 @@ export default function App() {
 
   return (
     <CartProvider>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-purple-500 selection:text-white">
         
-        {/* Top Header */}
+        {/* Sticky Header Bar */}
         <header className="bg-[#0c0a1d]/90 backdrop-blur-md sticky top-0 z-50 border-b border-purple-900/40 shadow-lg px-4 lg:px-8 py-2.5">
           <Navbar />
         </header>
 
-        {/* Category Navigation Bar */}
+        {/* Dynamic Category Navigation */}
         <CategoryBar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
 
+        {/* Main Application Routes */}
         <main className="flex-1">
           <Routes>
-            {/* Home Routes */}
+            {/* Public Home & Browsing Routes */}
             <Route path="/" element={<Home selectedCategory={selectedCategory} />} />
             <Route path="/home" element={<Home selectedCategory={selectedCategory} />} />
-
-            {/* Marketplace & Search Routes */}
             <Route path="/marketplace" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/search" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/products" element={<Marketplace selectedCategory={selectedCategory} />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/signup" element={<Register />} />
-
-            {/* Product Details & Cart */}
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
             <Route path="/onboarding" element={<Onboarding />} />
 
-            {/* Order Details & Tracking Routes */}
-            <Route path="/order-details" element={<OrderDetails />} />
-            <Route path="/order-details/:orderId" element={<OrderDetails />} />
-
-            {/* Dropdown Navigation Routes */}
-            <Route path="/orders" element={<BuyerDashboard />} />
+            {/* Quick Links Nav Redirections */}
             <Route path="/wishlist" element={<Marketplace selectedCategory={selectedCategory} />} />
             <Route path="/lelobhai-zone" element={<Home selectedCategory={selectedCategory} />} />
             <Route path="/rewards" element={<Home selectedCategory={selectedCategory} />} />
@@ -78,12 +78,12 @@ export default function App() {
             <Route path="/advertise" element={<Home selectedCategory={selectedCategory} />} />
             <Route path="/download-app" element={<Home selectedCategory={selectedCategory} />} />
 
-            {/* Protected Routes */}
+            {/* Protected Buyer & User Routes */}
             <Route
-              path="/supplier-dashboard"
+              path="/orders"
               element={
-                <ProtectedRoute allowedRole="SUPPLIER">
-                  <SupplierDashboard />
+                <ProtectedRoute allowedRole="BUYER">
+                  <BuyerDashboard />
                 </ProtectedRoute>
               }
             />
@@ -92,6 +92,22 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRole="BUYER">
                   <BuyerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/order-details"
+              element={
+                <ProtectedRoute>
+                  <OrderDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/order-details/:orderId"
+              element={
+                <ProtectedRoute>
+                  <OrderDetails />
                 </ProtectedRoute>
               }
             />
@@ -120,11 +136,22 @@ export default function App() {
               }
             />
 
-            {/* Fallback Route */}
+            {/* Protected Supplier Routes */}
+            <Route
+              path="/supplier-dashboard"
+              element={
+                <ProtectedRoute allowedRole="SUPPLIER">
+                  <SupplierDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 Fallback Route */}
             <Route path="*" element={<Home selectedCategory={selectedCategory} />} />
           </Routes>
         </main>
 
+        {/* Global Footer & Floating AI Companion */}
         <Footer />
         <AIAssistant />
       </div>

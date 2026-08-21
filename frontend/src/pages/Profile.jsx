@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import API from '../services/api'; // API service import
 import { 
   Package, 
   User, 
@@ -30,37 +31,72 @@ export default function Profile() {
   const [newUpi, setNewUpi] = useState('');
   const [showAddUpi, setShowAddUpi] = useState(false);
 
-  // User Form State initialized with fallback values
-  const [formData, setFormData] = useState({
-    firstName: 'Prakash',
-    lastName: 'Singh',
-    gender: 'Male',
-    email: 'prakashsingh03102@gmail.com',
-    phone: '+919236894256'
+  // Address State
+  const [addresses, setAddresses] = useState([]);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressData, setAddressData] = useState({
+    name: '',
+    phone: '',
+    pincode: '',
+    locality: '',
+    address: '',
+    city: '',
+    state: '',
+    type: 'Home'
   });
 
-  // Sync state if user context updates from API
+  // User Form State
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    gender: 'Male',
+    email: '',
+    phone: ''
+  });
+
+  // Fetch User Profile from Backend on Component Mount
   useEffect(() => {
-    if (user) {
-      const nameParts = (user.name || 'Prakash Singh').split(' ');
-      setFormData({
-        firstName: nameParts[0] || '',
-        lastName: nameParts.slice(1).join(' ') || '',
-        gender: user.gender || 'Male',
-        email: user.email || '',
-        phone: user.phone || ''
-      });
-    }
+    const fetchUserProfile = async () => {
+      try {
+        const { data } = await API.get('/users/profile');
+        setFormData({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          gender: data.gender || 'Male',
+          email: data.email || '',
+          phone: data.phone || ''
+        });
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        // Fallback context data agar API available na ho
+        if (user) {
+          const nameParts = (user.name || '').split(' ');
+          setFormData({
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            gender: user.gender || 'Male',
+            email: user.email || '',
+            phone: user.phone || ''
+          });
+        }
+      }
+    };
+
+    fetchUserProfile();
   }, [user]);
 
-  // Save handler for profile updates
-  const handleSave = (type) => {
-    if (type === 'name') setIsEditingName(false);
-    if (type === 'email') setIsEditingEmail(false);
-    if (type === 'phone') setIsEditingPhone(false);
-    
-    // Backend API integration logic goes here
-    alert(`${type.toUpperCase()} details saved successfully!`);
+  // Save handler for profile updates (backend call)
+  const handleSave = async (type) => {
+    try {
+      await API.put('/users/profile', formData);
+      if (type === 'name') setIsEditingName(false);
+      if (type === 'email') setIsEditingEmail(false);
+      if (type === 'phone') setIsEditingPhone(false);
+      alert(`${type.toUpperCase()} details saved successfully!`);
+    } catch (err) {
+      console.error("Profile save error:", err);
+      alert("Failed to update profile. Please try again.");
+    }
   };
 
   const handleAddUpi = (e) => {
@@ -415,11 +451,97 @@ export default function Profile() {
           {/* Manage Addresses View */}
           {activeTab === 'addresses' && (
             <div>
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Manage Addresses</h2>
-              <button className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-sm mb-4">+ ADD A NEW ADDRESS</button>
-              <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                No addresses saved yet.
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-gray-800">Manage Addresses</h2>
+                <button 
+                  onClick={() => setShowAddressForm(!showAddressForm)}
+                  className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-sm shadow-sm hover:bg-blue-700"
+                >
+                  {showAddressForm ? 'CANCEL' : '+ ADD A NEW ADDRESS'}
+                </button>
               </div>
+
+              {/* Address Form */}
+              {showAddressForm && (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  setAddresses([...addresses, addressData]);
+                  setShowAddressForm(false);
+                  setAddressData({ name: '', phone: '', pincode: '', locality: '', address: '', city: '', state: '', type: 'Home' });
+                }} className="bg-slate-50 p-4 border border-gray-200 mb-4 rounded-sm flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" placeholder="Name" required 
+                      value={addressData.name} 
+                      onChange={(e) => setAddressData({...addressData, name: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                    <input 
+                      type="text" placeholder="10-digit mobile number" required 
+                      value={addressData.phone} 
+                      onChange={(e) => setAddressData({...addressData, phone: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" placeholder="Pincode" required 
+                      value={addressData.pincode} 
+                      onChange={(e) => setAddressData({...addressData, pincode: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                    <input 
+                      type="text" placeholder="Locality" required 
+                      value={addressData.locality} 
+                      onChange={(e) => setAddressData({...addressData, locality: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                  </div>
+                  <textarea 
+                    placeholder="Address (Area and Street)" required 
+                    value={addressData.address} 
+                    onChange={(e) => setAddressData({...addressData, address: e.target.value})}
+                    className="p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500 h-20"
+                  />
+                  <div className="flex gap-3">
+                    <input 
+                      type="text" placeholder="City/District/Town" required 
+                      value={addressData.city} 
+                      onChange={(e) => setAddressData({...addressData, city: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                    <input 
+                      type="text" placeholder="State" required 
+                      value={addressData.state} 
+                      onChange={(e) => setAddressData({...addressData, state: e.target.value})}
+                      className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                    />
+                  </div>
+                  <button type="submit" className="bg-blue-600 text-white font-bold text-xs py-2 px-6 w-fit rounded-sm">
+                    SAVE ADDRESS
+                  </button>
+                </form>
+              )}
+
+              {/* Address List */}
+              {addresses.length === 0 ? (
+                <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
+                  No addresses saved yet.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {addresses.map((item, index) => (
+                    <div key={index} className="p-4 border border-gray-200 rounded-sm bg-white text-xs text-gray-700 flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm">{item.name}</span>
+                        <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded font-semibold uppercase">{item.type}</span>
+                        <span className="font-semibold ml-2">{item.phone}</span>
+                      </div>
+                      <p>{item.address}, {item.locality}, {item.city}, {item.state} - <span className="font-bold">{item.pincode}</span></p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

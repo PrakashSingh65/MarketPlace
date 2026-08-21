@@ -7,30 +7,45 @@ export default function Marketplace({ selectedCategory }) {
   const searchQuery = searchParams.get('q') || '';
   const { addToCart } = useCart();
 
+  // Updated Mock Products (Laptops Added)
   const products = [
     {
       id: 1,
+      name: 'Gaming Laptop RTX 4060',
+      category: 'Electronics',
+      price: 65999,
+      image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=500&auto=format&fit=crop&q=60'
+    },
+    {
+      id: 2,
+      name: 'Ultra Slim Laptop i5 12th Gen',
+      category: 'Electronics',
+      price: 45999,
+      image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=60'
+    },
+    {
+      id: 3,
       name: 'Premium Cotton Fabric',
       category: 'Fashion',
       price: 499,
       image: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=500&auto=format&fit=crop&q=60'
     },
     {
-      id: 2,
+      id: 4,
       name: 'Sports Wear T-Shirt',
       category: 'Sports',
       price: 799,
       image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500&auto=format&fit=crop&q=60'
     },
     {
-      id: 3,
+      id: 5,
       name: 'Running Sports Shoes',
       category: 'Sports',
       price: 1499,
       image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60'
     },
     {
-      id: 4,
+      id: 6,
       name: 'Smart Fitness Band',
       category: 'Mobiles',
       price: 1999,

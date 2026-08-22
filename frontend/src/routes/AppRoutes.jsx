@@ -5,28 +5,29 @@ import {
 } from 'react-router-dom';
 
 // Auth Pages
-import Login from './pages/login';
-import Register from './pages/register';
-import Onboarding from './pages/Onboarding';
+import Login from '../pages/login';
+import Register from '../pages/register';
+import Onboarding from '../pages/Onboarding';
 
 // Core Pages
-import Home from './pages/Home';
-import LandingPage from './pages/LandingPage';
-import Marketplace from './pages/marketplace';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/cart';
-import Checkout from './pages/Checkout';
+import Home from '../pages/Home';
+import LandingPage from '../pages/LandingPage';
+import Marketplace from '../pages/marketplace';
+import ProductDetail from '../pages/ProductDetail';
+import Cart from '../pages/cart';
+import Checkout from '../pages/Checkout';
 
 // Dashboards & Support
-import SupplierDashboard from './pages/supplierDashboard';
-import BuyerDashboard from './pages/BuyerDashboard';
-import OrderDetails from './pages/OrderDetails';
-import Profile from './pages/Profile';
-import CustomerCare from './pages/CustomerCare';
+import SupplierDashboard from '../pages/supplierDashboard';
+import BuyerDashboard from '../pages/BuyerDashboard';
+import OrderDetails from '../pages/OrderDetails';
+import Profile from '../pages/Profile';
+import CustomerCare from '../pages/CustomerCare';
 
 // Context & Protection
-import { useCart } from './context/CartContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { useCart } from '../context/CartContext';
+import ProtectedRoute from '../components/ProtectedRoute';
+import App from '../App';
 
 
 // Checkout context wrapper
@@ -43,9 +44,13 @@ const router = createBrowserRouter([
   // =========================
   {
     path: '/',
-    element: <LandingPage />,
-  },
-  {
+    element: <App />,
+    children: [
+      {
+        path: '',
+        element: <LandingPage/>,
+      },
+      {
     path: '/home',
     element: <Home />,
   },
@@ -205,9 +210,9 @@ const router = createBrowserRouter([
     path: '*',
     element: <LandingPage />,
   },
+    ]
+  },
 ]);
 
 
-export default function AppRoutes() {
-  return <RouterProvider router={router} />;
-}
+export default router

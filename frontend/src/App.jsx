@@ -8,7 +8,9 @@ import AIAssistant from './components/AIAssistant';
 
 // Context & Routes
 import { CartProvider } from './context/CartContext';
-import AppRoutes from './routes/AppRoutes'; // Ya aapka path jo ho (e.g. './AppRoutes')
+// Agar AppRoutes.jsx aur App.jsx SAME folder me hai toh './AppRoutes' use karein.
+// Agar AppRoutes.jsx 'src/routes/' me hai toh './routes/AppRoutes' use karein.
+import AppRoutes from './AppRoutes'; 
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('For You');

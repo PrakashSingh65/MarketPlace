@@ -6,6 +6,7 @@ import Navbar from './components/navbar';
 import CategoryBar from './components/CategoryBar';
 import Footer from './components/Footer';
 import AIAssistant from './components/AIAssistant';
+import ProductList from './components/ProductList';
 
 // Context & Routes
 import { CartProvider } from './context/CartContext';
@@ -45,6 +46,7 @@ export default function App() {
     <Outlet />
     <Footer />
          <AIAssistant />
+         <ProductList />
  
     </div>
    );

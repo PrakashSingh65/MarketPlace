@@ -1,14 +1,7 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: texmarket_db
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
+ 
 
   backend:
     build: ./Backend
@@ -20,8 +13,7 @@ services:
       - PORT=5000
       - MONGO_URI=mongodb://mongodb:27017/texmarket
       - JWT_SECRET=secret123
-    depends_on:
-      - mongodb
+    
 
   frontend:
     build: ./frontend
@@ -34,5 +26,3 @@ services:
     depends_on:
       - backend
 
-volumes:
-  mongo-data:

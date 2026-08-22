@@ -1,28 +1,32 @@
-version: '3.8'
+version: '3.8' # Is line ko hata sakte hain agar warning remove karni hai
 
 services:
- 
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
 
   backend:
-    build: ./Backend
+    build: ./backend
     container_name: texmarket_backend
-    restart: always
     ports:
       - "5000:5000"
     environment:
+      - MONGO_URI=mongodb://mongo:27017/texmarket
       - PORT=5000
-      - MONGO_URI=mongodb://mongodb:27017/texmarket
-      - JWT_SECRET=secret123
-    
+    depends_on:
+      - mongo
 
   frontend:
     build: ./frontend
     container_name: texmarket_frontend
-    restart: always
     ports:
       - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:5000
     depends_on:
       - backend
 
+volumes:
+  mongo-data:

@@ -37,13 +37,18 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
+// Database connection attempt
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+    console.log('MongoDB connection established successfully.');
   })
   .catch((err) => {
     console.error('Database connection failed:', err);
-    process.exit(1);
+    // process.exit(1) ko hata diya gaya hai taaki server crash na ho
   });
+
+// Express server ko bina DB wait kiye listen mode par rakhein
+// '0.0.0.0' Host specify karna Docker binding ke liye zaroori hai
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

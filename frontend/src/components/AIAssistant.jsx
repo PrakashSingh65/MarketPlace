@@ -16,12 +16,15 @@ export default function AIAssistant() {
   const [products, setProducts] = useState([]);
   const chatEndRef = useRef(null);
 
-  // 🟢 Fetch marketplace products safely
+  // 🟢 Fetch marketplace products using relative endpoint (Proxy compatible)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-        const response = await axios.get(`${apiUrl}/api/products`);
+        // Fallback to relative endpoint if VITE_API_URL is not set
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const endpoint = baseUrl ? `${baseUrl}/api/products` : '/api/products';
+        
+        const response = await axios.get(endpoint);
         
         // Response array format validation check
         const data = response.data;

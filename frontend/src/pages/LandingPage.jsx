@@ -16,13 +16,13 @@ export default function LandingPage() {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         
-        // 🟢 FIX 1: `/api/products` endpoint use kiya gaya hai
+        // `/api/products` endpoint
         const res = await fetch(`${apiUrl}/api/products`);
         
         if (res.ok) {
           const data = await res.json();
           
-          // 🟢 FIX 2: Check kiya ki response Direct Array hai ya Object ({ products: [] })
+          // Direct Array ya Object ({ products: [] }) validation
           const productsArray = Array.isArray(data) ? data : (data.products || []);
           setFeaturedProducts(productsArray.slice(0, 8));
         } else {
@@ -67,7 +67,7 @@ export default function LandingPage() {
       name: 'Polyester', 
       icon: Layers, 
       desc: 'Microfiber, Crepe & Satin Blends', 
-      image: '/cotton_fabric_1785859945537.jpg',
+      image: '/polyester_fabric_1785859980000.jpg',
       color: 'from-cyan-600/90 to-slate-900/90',
       badge: 'Bulk Ready'
     },
@@ -75,7 +75,7 @@ export default function LandingPage() {
       name: 'Wool', 
       icon: Wind, 
       desc: 'Merino, Cashmere & Blends', 
-      image: '/silk_fabric_1785859961505.jpg',
+      image: '/wool_fabric_1785859990000.jpg',
       color: 'from-amber-600/90 to-slate-900/90',
       badge: 'Winter Special'
     },
@@ -83,7 +83,7 @@ export default function LandingPage() {
       name: 'Linen', 
       icon: Leaf, 
       desc: 'Pure Flax, Cambric & Cotton Linen', 
-      image: '/cotton_fabric_1785859945537.jpg',
+      image: '/linen_fabric_1785860000000.jpg',
       color: 'from-emerald-600/90 to-slate-900/90',
       badge: 'Eco Friendly'
     },
@@ -113,7 +113,7 @@ export default function LandingPage() {
           
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl leading-[1.15] mb-8">
             Source Wholesale Fabrics <br className="hidden sm:block" />
-            Directly From <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-emerald-400">Verified Mills & Mills Direct</span>
+            Directly From <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-emerald-400">Verified Mills & Direct Suppliers</span>
           </h1>
 
           <p className="text-lg sm:text-2xl text-slate-300 max-w-3xl font-light leading-relaxed mb-10">
@@ -275,15 +275,15 @@ export default function LandingPage() {
               to="/marketplace" 
               className="hidden sm:inline-flex items-center gap-2 text-indigo-400 font-bold hover:text-indigo-300 transition-colors"
             >
-              <span>View All 10,000+ Products</span>
+              <span>View All Products</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-96 rounded-2xl bg-slate-800/50 animate-pulse border border-slate-800" />
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="h-96 rounded-2xl bg-slate-800/50 animate-pulse border border-slate-800" />
               ))}
             </div>
           ) : featuredProducts.length > 0 ? (

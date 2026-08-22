@@ -16,17 +16,15 @@ export default function AIAssistant() {
   const [products, setProducts] = useState([]);
   const chatEndRef = useRef(null);
 
-  // 🟢 Fetch marketplace products using relative endpoint (Proxy compatible)
+  // Fetch marketplace products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Fallback to relative endpoint if VITE_API_URL is not set
         const baseUrl = import.meta.env.VITE_API_URL || '';
         const endpoint = baseUrl ? `${baseUrl}/api/products` : '/api/products';
         
         const response = await axios.get(endpoint);
         
-        // Response array format validation check
         const data = response.data;
         const productsList = Array.isArray(data) ? data : (data.products || []);
         setProducts(productsList);
@@ -92,7 +90,6 @@ export default function AIAssistant() {
     const query = input.toLowerCase();
     setInput('');
 
-    // Safe filtering with Array check
     setTimeout(() => {
       const safeProducts = Array.isArray(products) ? products : [];
       const matchedProducts = safeProducts.filter((p) => {
@@ -111,7 +108,7 @@ export default function AIAssistant() {
       const aiReply = {
         sender: 'ai',
         text: aiReplyText,
-        products: matchedProducts.slice(0, 3) // Top 3 recommendations
+        products: matchedProducts.slice(0, 3)
       };
 
       setMessages((prev) => [...prev, aiReply]);
@@ -120,7 +117,6 @@ export default function AIAssistant() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      {/* Floating Toggle Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -133,11 +129,8 @@ export default function AIAssistant() {
         </button>
       )}
 
-      {/* AI Chat Window */}
       {isOpen && (
         <div className="w-[360px] sm:w-[400px] h-[520px] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
-          
-          {/* Header */}
           <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 bg-indigo-600/20 border border-indigo-500/30 rounded-xl flex items-center justify-center text-indigo-400">
@@ -158,7 +151,6 @@ export default function AIAssistant() {
             </button>
           </div>
 
-          {/* Chat Messages Body */}
           <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
             {messages.map((msg, index) => (
               <div
@@ -177,7 +169,6 @@ export default function AIAssistant() {
                   {msg.text}
                 </div>
 
-                {/* Recommended Product Cards */}
                 {msg.products && msg.products.length > 0 && (
                   <div className="mt-3 space-y-2 w-full">
                     {msg.products.map((product) => (
@@ -207,7 +198,6 @@ export default function AIAssistant() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input Form */}
           <form onSubmit={handleSend} className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
             <button
               type="button"

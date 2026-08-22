@@ -6,33 +6,48 @@ dotenv.config();
 let isConnected = false;
 
 export async function connectDB(retries = 5, delay = 5000) {
-  if (isConnected) {
-    console.log('Using existing MongoDB connection.');
+  // Already connected ho toh fast return karein
+  if (isConnected && mongoose.connection.readyState === 1) {
+    console.log(' Using existing MongoDB connection.');
     return;
   }
 
-  if (!process.env.MONGODB_URI) {
-    console.warn('MONGODB_URI is not set. Starting without MongoDB for local development.');
-    isConnected = true;
+  const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+  if (!mongoURI) {
+    console.warn('⚠️ MONGODB_URI / MONGO_URI is not set in environment variables!');
     return;
   }
+
+  // Connection Event Listeners
+  mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️ MongoDB connection lost.');
+    isConnected = false;
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+  });
 
   while (retries > 0) {
     try {
-      await mongoose.connect(process.env.MONGODB_URI);
+      console.log('⏳ Connecting to MongoDB...');
+      await mongoose.connect(mongoURI);
 
       isConnected = true;
       console.log('✅ MongoDB Connected Successfully!');
       return;
     } catch (error) {
-      console.error(
-        `MongoDB Connection Failed! Retries left: ${retries - 1}`
-      );
-
       retries -= 1;
+      console.error(`❌ MongoDB Connection Failed! Retries left: ${retries}`);
+      console.error(`Reason: ${error.message}`);
+
       if (retries === 0) {
-        console.warn('MongoDB Connection Failed. Continuing without database for local development.');
-        isConnected = true;
+        console.error('💥 All retry attempts exhausted. Could not connect to MongoDB.');
+        // Production ya Docker env me exit kar dena standard practices hai
+        if (process.env.NODE_ENV === 'production') {
+          process.exit(1);
+        }
         return;
       }
 

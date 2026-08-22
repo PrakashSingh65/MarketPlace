@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 // Layout Components
-import Navbar from './components/Navbar';
+import Navbar from './components/navbar';
 import CategoryBar from './components/CategoryBar';
 import Footer from './components/Footer';
 import AIAssistant from './components/AIAssistant';
@@ -10,7 +10,7 @@ import AIAssistant from './components/AIAssistant';
 import { CartProvider } from './context/CartContext';
 // Agar AppRoutes.jsx aur App.jsx SAME folder me hai toh './AppRoutes' use karein.
 // Agar AppRoutes.jsx 'src/routes/' me hai toh './routes/AppRoutes' use karein.
-import AppRoutes from './AppRoutes'; 
+import AppRoutes from "./routes/AppRoutes"; 
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('For You');

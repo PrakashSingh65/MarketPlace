@@ -1,7 +1,10 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from 'react-router-dom';
 
-// Auth Pages (Ensure casing matches your actual filenames)
+// Auth Pages
 import Login from './pages/login';
 import Register from './pages/register';
 import Onboarding from './pages/Onboarding';
@@ -25,108 +28,186 @@ import CustomerCare from './pages/CustomerCare';
 import { useCart } from './context/CartContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Wrapper for Checkout context props
+
+// Checkout context wrapper
 function CheckoutPageWrapper() {
   const { cart, clearCart } = useCart();
+
   return <Checkout cart={cart} clearCart={clearCart} />;
 }
 
-export default function AppRoutes({ searchQuery, selectedCategory }) {
-  return (
-    <Routes>
-      {/* Public Pages */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/home" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/marketplace" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/search" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/products" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/customer-care" element={<CustomerCare />} />
 
-      {/* Auth Pages */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/signup" element={<Register />} />
-      <Route path="/onboarding" element={<Onboarding />} />
+const router = createBrowserRouter([
+  // =========================
+  // Public Pages
+  // =========================
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: '/home',
+    element: <Home />,
+  },
+  {
+    path: '/marketplace',
+    element: <Marketplace />,
+  },
+  {
+    path: '/search',
+    element: <Marketplace />,
+  },
+  {
+    path: '/products',
+    element: <Marketplace />,
+  },
+  {
+    path: '/product/:id',
+    element: <ProductDetail />,
+  },
+  {
+    path: '/cart',
+    element: <Cart />,
+  },
+  {
+    path: '/customer-care',
+    element: <CustomerCare />,
+  },
 
-      {/* Navigation Redirections */}
-      <Route path="/wishlist" element={<Marketplace searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/lelobhai-zone" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/rewards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/gift-cards" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/notifications" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/advertise" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
-      <Route path="/download-app" element={<Home searchQuery={searchQuery} selectedCategory={selectedCategory} />} />
 
-      {/* Protected Routes */}
-      <Route
-        path="/orders"
-        element={
-          <ProtectedRoute allowedRole="BUYER">
-            <BuyerDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/buyer-dashboard"
-        element={
-          <ProtectedRoute allowedRole="BUYER">
-            <BuyerDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/supplier-dashboard"
-        element={
-          <ProtectedRoute allowedRole="SUPPLIER">
-            <SupplierDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/order-details"
-        element={
-          <ProtectedRoute>
-            <OrderDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/order-details/:orderId"
-        element={
-          <ProtectedRoute>
-            <OrderDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/checkout"
-        element={
-          <ProtectedRoute>
-            <CheckoutPageWrapper />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/account"
-        element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }
-      />
+  // =========================
+  // Auth Pages
+  // =========================
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
+  },
+  {
+    path: '/signup',
+    element: <Register />,
+  },
+  {
+    path: '/onboarding',
+    element: <Onboarding />,
+  },
 
-      {/* 404 Fallback */}
-      <Route path="*" element={<LandingPage />} />
-    </Routes>
-  );
+
+  // =========================
+  // Navigation Pages
+  // =========================
+  {
+    path: '/wishlist',
+    element: <Marketplace />,
+  },
+  {
+    path: '/lelobhai-zone',
+    element: <Home />,
+  },
+  {
+    path: '/rewards',
+    element: <Home />,
+  },
+  {
+    path: '/gift-cards',
+    element: <Home />,
+  },
+  {
+    path: '/notifications',
+    element: <Home />,
+  },
+  {
+    path: '/advertise',
+    element: <Home />,
+  },
+  {
+    path: '/download-app',
+    element: <Home />,
+  },
+
+
+  // =========================
+  // Protected Routes
+  // =========================
+  {
+    path: '/orders',
+    element: (
+      <ProtectedRoute allowedRole="BUYER">
+        <BuyerDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/buyer-dashboard',
+    element: (
+      <ProtectedRoute allowedRole="BUYER">
+        <BuyerDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/supplier-dashboard',
+    element: (
+      <ProtectedRoute allowedRole="SUPPLIER">
+        <SupplierDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/order-details',
+    element: (
+      <ProtectedRoute>
+        <OrderDetails />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/order-details/:orderId',
+    element: (
+      <ProtectedRoute>
+        <OrderDetails />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/checkout',
+    element: (
+      <ProtectedRoute>
+        <CheckoutPageWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/account',
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
+  },
+
+
+  // =========================
+  // 404
+  // =========================
+  {
+    path: '*',
+    element: <LandingPage />,
+  },
+]);
+
+
+export default function AppRoutes() {
+  return <RouterProvider router={router} />;
 }

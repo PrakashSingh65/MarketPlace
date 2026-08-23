@@ -14,23 +14,19 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        
-        // `/api/products` endpoint
-        const res = await fetch(`${apiUrl}/api/products`);
+        // Direct localhost URLs ki jagah relative path proxy use karein
+        const res = await fetch('/api/products');
         
         if (res.ok) {
           const data = await res.json();
-          
-          // Direct Array ya Object ({ products: [] }) validation
           const productsArray = Array.isArray(data) ? data : (data.products || []);
           setFeaturedProducts(productsArray.slice(0, 8));
         } else {
-          console.error(`Failed to fetch products: ${res.status}`);
+          console.error(`Failed to fetch products: Status ${res.status}`);
         }
       } catch (err) {
         console.error('Error fetching featured products:', err);
-      } finally {
+      } font-medium {
         setLoading(false);
       }
     };
@@ -43,7 +39,7 @@ export default function LandingPage() {
       name: 'Cotton', 
       icon: Droplets, 
       desc: 'Organic, Combed & Carded Yarns', 
-      image: '/cotton_fabric_1785859945537.jpg',
+      image: 'https://placehold.co/600x400?text=Cotton+Fabric',
       color: 'from-blue-600/90 to-slate-900/90',
       badge: 'High Demand'
     },
@@ -51,7 +47,7 @@ export default function LandingPage() {
       name: 'Silk', 
       icon: Gem, 
       desc: 'Mulberry, Tussar & Raw Silks', 
-      image: '/silk_fabric_1785859961505.jpg',
+      image: 'https://placehold.co/600x400?text=Silk+Fabric',
       color: 'from-purple-600/90 to-slate-900/90',
       badge: 'Luxury'
     },
@@ -59,7 +55,7 @@ export default function LandingPage() {
       name: 'Denim', 
       icon: Shirt, 
       desc: 'Rigid, Stretch & Selvedge Denim', 
-      image: '/denim_fabric_1785859976884.jpg',
+      image: 'https://placehold.co/600x400?text=Denim+Fabric',
       color: 'from-indigo-600/90 to-slate-900/90',
       badge: 'Trending'
     },
@@ -67,7 +63,7 @@ export default function LandingPage() {
       name: 'Polyester', 
       icon: Layers, 
       desc: 'Microfiber, Crepe & Satin Blends', 
-      image: '/polyester_fabric_1785859980000.jpg',
+      image: 'https://placehold.co/600x400?text=Polyester+Fabric',
       color: 'from-cyan-600/90 to-slate-900/90',
       badge: 'Bulk Ready'
     },
@@ -75,7 +71,7 @@ export default function LandingPage() {
       name: 'Wool', 
       icon: Wind, 
       desc: 'Merino, Cashmere & Blends', 
-      image: '/wool_fabric_1785859990000.jpg',
+      image: 'https://placehold.co/600x400?text=Wool+Fabric',
       color: 'from-amber-600/90 to-slate-900/90',
       badge: 'Winter Special'
     },
@@ -83,7 +79,7 @@ export default function LandingPage() {
       name: 'Linen', 
       icon: Leaf, 
       desc: 'Pure Flax, Cambric & Cotton Linen', 
-      image: '/linen_fabric_1785860000000.jpg',
+      image: 'https://placehold.co/600x400?text=Linen+Fabric',
       color: 'from-emerald-600/90 to-slate-900/90',
       badge: 'Eco Friendly'
     },
@@ -96,8 +92,8 @@ export default function LandingPage() {
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 z-0">
           <img 
-            src="/textile_hero_bg_1785859871075.jpg" 
-            alt="Hero textile texture background" 
+            src="https://placehold.co/1920x1080?text=Textile+Marketplace+Banner" 
+            alt="Hero textile background" 
             className="w-full h-full object-cover object-center scale-105 filter brightness-75 contrast-125"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
@@ -105,7 +101,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-semibold mb-8 backdrop-blur-md animate-fade-in shadow-lg shadow-indigo-500/10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-semibold mb-8 backdrop-blur-md shadow-lg shadow-indigo-500/10">
             <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
             <span>India's Next-Gen B2B Textile Ecosystem</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>

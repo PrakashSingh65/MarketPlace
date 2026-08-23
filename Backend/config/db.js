@@ -22,12 +22,7 @@ const connectDB = async (retries = 5, delay = 3000) => {
     return;
   }
 
-  const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
-
-  if (!mongoURI) {
-    console.error('💥 MONGODB_URI / MONGO_URI is missing in .env file!');
-    process.exit(1);
-  }
+  const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/marketplace';
 
   while (retries > 0) {
     try {

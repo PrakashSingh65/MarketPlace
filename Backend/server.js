@@ -10,16 +10,33 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
+// Allowed Origins List for CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
+// Fixed CORS Setup
 app.use(cors({
-  origin: '*', // Production me exact frontend URL se replace karein
+  origin: (origin, callback) => {
+    // Postman ya local tools ke request (jahan origin null hota hai) allow karein
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Dev environment ke liye allow all dynamic origins
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Static Uploads Directory (Images/Files ke liye)
+// Static Uploads Directory
 const __dirname = path.resolve();
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
@@ -53,18 +70,18 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Server Startup Function (DB connection ke baad server start karein)
+// Server Startup Function
 const startServer = async () => {
   try {
-    // Database Connect karein
     await connectDB();
     
-    // Express Server Bind karein ('0.0.0.0' for Docker compatibility)
+    // Bind to 0.0.0.0 for Docker & Local IPv4/IPv6 compatibility
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('💥 Failed to start server due to DB connection error:', error.message);
+    process.exit(1);
   }
 };
 

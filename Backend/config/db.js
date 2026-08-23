@@ -5,37 +5,40 @@ dotenv.config();
 
 let isConnected = false;
 
-export async function connectDB(retries = 5, delay = 5000) {
-  // Already connected ho toh fast return karein
+// Global Connection Listeners (Fired once)
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB connection lost.');
+  isConnected = false;
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB Connection Error:', err.message);
+});
+
+const connectDB = async (retries = 5, delay = 3000) => {
+  // Already connected check
   if (isConnected && mongoose.connection.readyState === 1) {
-    console.log(' Using existing MongoDB connection.');
+    console.log('⚡ Using existing MongoDB connection.');
     return;
   }
 
   const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!mongoURI) {
-    console.warn('⚠️ MONGODB_URI / MONGO_URI is not set in environment variables!');
-    return;
+    console.error('💥 MONGODB_URI / MONGO_URI is missing in .env file!');
+    process.exit(1);
   }
-
-  // Connection Event Listeners
-  mongoose.connection.on('disconnected', () => {
-    console.warn('⚠️ MongoDB connection lost.');
-    isConnected = false;
-  });
-
-  mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB Connection Error:', err.message);
-  });
 
   while (retries > 0) {
     try {
       console.log('⏳ Connecting to MongoDB...');
-      await mongoose.connect(mongoURI);
+      
+      const conn = await mongoose.connect(mongoURI, {
+        serverSelectionTimeoutMS: 5000, // Fast timeout for quick error catching
+      });
 
       isConnected = true;
-      console.log('✅ MongoDB Connected Successfully!');
+      console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host}`);
       return;
     } catch (error) {
       retries -= 1;
@@ -43,18 +46,14 @@ export async function connectDB(retries = 5, delay = 5000) {
       console.error(`Reason: ${error.message}`);
 
       if (retries === 0) {
-        console.error('💥 All retry attempts exhausted. Could not connect to MongoDB.');
-        // Production ya Docker env me exit kar dena standard practices hai
-        if (process.env.NODE_ENV === 'production') {
-          process.exit(1);
-        }
-        return;
+        console.error('💥 All retry attempts exhausted. Halting process to avoid timeout errors.');
+        process.exit(1); // Force exit so server doesn't stay alive without DB
       }
 
       console.log(`⏳ Retrying connection in ${delay / 1000} seconds...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-}
+};
 
 export default connectDB;

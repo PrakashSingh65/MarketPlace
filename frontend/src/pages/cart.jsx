@@ -95,7 +95,7 @@ export default function Cart() {
                     {/* Item Image */}
                     <div className="w-24 h-24 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex items-center justify-center flex-shrink-0">
                       <img 
-                        src={item.image || item.imageUrl || 'https://via.placeholder.com/150'} 
+                        src={item.image || item.imageUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="14">No Image</text></svg>'} 
                         alt={item.title || item.name} 
                         className="max-h-full max-w-full object-contain rounded-lg"
                       />

@@ -26,8 +26,6 @@ export default function LandingPage() {
         }
       } catch (err) {
         console.error('Error fetching featured products:', err);
-      } font-medium {
-        setLoading(false);
       }
     };
     

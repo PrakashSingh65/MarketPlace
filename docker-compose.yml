@@ -1,5 +1,3 @@
-version: '3.8' # Is line ko hata sakte hain agar warning remove karni hai
-
 services:
   mongo:
     image: mongo:latest
@@ -10,13 +8,20 @@ services:
       - mongo-data:/data/db
 
   backend:
-    build: ./backend
+    build: ./Backend
     container_name: texmarket_backend
     ports:
       - "5000:5000"
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules
     environment:
-      - MONGO_URI=mongodb://mongo:27017/texmarket
+      - MONGODB_URI=mongodb://mongo:27017/marketplace
       - PORT=5000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    env_file:
+      - ./Backend/.env
     depends_on:
       - mongo
 
@@ -25,6 +30,13 @@ services:
     container_name: texmarket_frontend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_PROXY_TARGET=http://backend:5000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
 

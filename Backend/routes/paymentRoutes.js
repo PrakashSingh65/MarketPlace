@@ -1,26 +1,9 @@
-const express = require('express');
+import express from 'express';
+import { createOrder, verifyPayment } from '../controllers/paymentController.js';
+
 const router = express.Router();
-const Product = require('../models/Product'); // Path apne model ke hisaab se set karein
 
-router.get('/', async (req, res) => {
-  try {
-    const { search, category } = req.query;
-    let query = {};
+router.post('/create-order', createOrder);
+router.post('/verify-payment', verifyPayment);
 
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const products = await Product.find(query);
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error });
-  }
-});
-
-module.exports = router;
+export default router;

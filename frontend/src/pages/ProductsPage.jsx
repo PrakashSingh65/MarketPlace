@@ -50,7 +50,7 @@ export default function ProductsPage() {
           {products.map((p) => (
             <div key={p._id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', background: '#fff' }}>
               <img
-                src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150'}
+                src={(p.images && p.images[0]) || p.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="14">No Image</text></svg>'}
                 alt={p.title}
                 style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
               />

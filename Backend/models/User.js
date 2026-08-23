@@ -80,7 +80,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes optimization for performance
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

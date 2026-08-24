@@ -1,18 +1,9 @@
-import express from 'express';
+import { Router } from "express";
 
-import authRoutes from './authRoutes.js';
-import productRoutes from './productRoutes.js';
-import orderRoutes from './orderRoutes.js';
-import cartRoutes from './cartRoutes.js';
-import paymentRoutes from './paymentRoutes.js';
+import v1Routes from "./v1/index.js";
 
-const router = express.Router();
+const router = Router();
 
-router.use('/auth', authRoutes);
-router.use('/products', productRoutes);
-router.use('/fabrics', productRoutes);
-router.use('/orders', orderRoutes);
-router.use('/cart', cartRoutes);
-router.use('/payment', paymentRoutes);
+router.use("/v1", v1Routes);
 
 export default router;

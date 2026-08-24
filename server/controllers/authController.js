@@ -1,85 +1,95 @@
-import User from '../models/User.js';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import User from "../models/User.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { generateToken } from "../utils/generateToken.js";
 
-// Generate Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secretkey123', {
-    expiresIn: '30d',
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, phone, role, password } = req.body;
+
+  const userExists = await User.findOne({ email });
+
+  if (userExists) {
+    return res.status(401).json({
+      message: "User already exists",
+      success: false,
+    });
+  }
+
+  const newUser = await User.create({
+    name,
+    email,
+    phone,
+    role,
+    password,
   });
-};
 
-// @desc    Register new user
-// @route   POST /api/auth/register
-export const registerUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+  if (newUser) {
+    generateToken(newUser._id, res);
+    res.status(201).json({
+      message: "user registered successfully",
+      success: true,
+    });
+  } else {
+    res.status(409).json({
+      message: "User registration failed",
+      success: false,
+    });
+  }
+});
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+  const userExists = await User.findOne({ email });
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
+  if (!userExists) {
+    return res.status(409).json({
+      message: "User does not exist",
+      success: false,
+    });
+  }
+
+  const isPasswordValid = await userExists.comparePassword(password);
+
+  if (!isPasswordValid) {
+    res.status(200).json({
+      message: "Invalid credentials",
+      success: false,
     });
 
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    generateToken(userExists._id, res);
+    res.status(200).json(userExists, {
+      message: "User logged in successfully",
+      success: true,
+    });
   }
-};
+});
 
-// @desc    Authenticate user & get token
-// @route   POST /api/auth/login
-export const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+export const logout = asyncHandler(async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "none",
+    secure: true,
+  });
+  res
+    .status(200)
+    .json({ message: "User logged out successfully", success: true });
+});
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
-    }
+export const checkAuth = asyncHandler(async (req, res) => {
+  res
+    .status(200)
+    .json(req.user, { message: "User is authenticated", success: true });
+});
 
-    const user = await User.findOne({ email }).select('+password');
-    if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
-    }
-  } catch (error) {
-    console.error('Error in loginUser:', error);
-    res.status(500).json({ message: error.message || 'Server error during login' });
+export const allUsers = asyncHandler(async (req, res) => {
+  const users = await User.find();
+
+  if (!users || users.length === 0) {
+    return res.status(404).json({ message: "No users found", success: false });
   }
-};
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-export const logoutUser = (req, res) => {
-  res.status(200).json({ message: 'Logged out successfully' });
-};
+  res.status(200).json(users, {
+    message: "Users fetched successfully",
+    success: true,
+  });
+});

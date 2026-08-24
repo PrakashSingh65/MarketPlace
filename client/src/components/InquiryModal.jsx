@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Loader2 } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function InquiryModal({ isOpen, onClose, product }) {
-  const { user, token } = useContext(AuthContext);
+  const { user } = useAuth();
   const [quantity, setQuantity] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,11 +47,11 @@ export default function InquiryModal({ isOpen, onClose, product }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
+        credentials: 'include',
         body: JSON.stringify({
           productId: product._id,
-          supplierId: product.supplierId._id,
+          supplierId: product.supplierId?._id || product.supplierId,
           quantity: Number(quantity),
           message,
         }),
@@ -84,7 +84,6 @@ export default function InquiryModal({ isOpen, onClose, product }) {
           isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
         }`}
       >
-        {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
           <h2 className="text-xl font-bold text-slate-800">Send Inquiry</h2>
           <button 
@@ -95,7 +94,6 @@ export default function InquiryModal({ isOpen, onClose, product }) {
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6">
           {success ? (
             <div className="py-8 flex flex-col items-center justify-center text-center animate-fade-in">

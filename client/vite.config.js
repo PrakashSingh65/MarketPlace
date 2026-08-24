@@ -24,13 +24,6 @@ export default defineConfig(({ mode }) => {
       watch: {
         usePolling: true,
       },
-      proxy: {
-        '/api': {
-          target: target,
-          changeOrigin: true,
-          secure: false,
-        },
-      },
     },
   };
 });

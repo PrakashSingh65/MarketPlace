@@ -20,25 +20,22 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // AuthContext ke updated login function ko use kar rahe hain
-      const res = await login({
+      const userData = await login({
         email: formData.email.trim(),
-        password: formData.password
+        password: formData.password,
       });
 
-      const userData = res?.user || res;
       const role = userData?.role?.toUpperCase();
 
-      // Role-Based Redirection Logic
       if (role === 'SUPPLIER') {
         navigate('/supplier-dashboard');
       } else {
-        navigate('/marketplace'); // ya '/buyer-dashboard'
+        navigate('/marketplace');
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error('Login Error:', err);
       setErrorMsg(err.message || 'Invalid Email or Password');
-    } finally {
+    } font-medium {
       setLoading(false);
     }
   };

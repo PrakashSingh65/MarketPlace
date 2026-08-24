@@ -1,196 +1,141 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  Building, Mail, Lock, User, ArrowRight, ShieldCheck, Eye, EyeOff, Layers 
-} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('BUYER');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'BUYER',
+    password: '',
+  });
 
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { register } = useAuth();
   const navigate = useNavigate();
-  
-  // 🟢 FIXED: '/api' suffix baseline URL me add kar diya hai
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    setErrorMsg('');
+    setLoading(true);
 
     try {
-      // Hit URL will be: http://localhost:5000/api/auth/register
-      const response = await fetch(`${apiUrl}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        role: formData.role,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // User token aur details local storage me save karein
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
-      // Role ke mutabiq right page par navigate karein
-      if (role === 'BUYER') {
-        navigate('/onboarding');
-      } else {
-        navigate('/supplier-dashboard');
-      }
-
+      // Redirect to login after successful register
+      navigate('/login');
     } catch (err) {
-      setError(err.message || 'An error occurred during registration');
-    } finally {
-      setIsLoading(false);
+      console.error('Registration Error:', err);
+      setErrorMsg(err.message || 'Registration failed');
+    } font-medium {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-        
-        {/* Header Logo */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 mb-3">
-            <Layers size={26} />
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Create an Account</h1>
-          <p className="text-slate-400 text-xs mt-1">Join the premier B2B Textile Marketplace</p>
-        </div>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-md space-y-4 shadow-2xl">
+        <h2 className="text-2xl font-bold text-white text-center mb-2">Create an Account</h2>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center font-medium">
-            {error}
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg text-xs text-center font-medium">
+            {errorMsg}
           </div>
         )}
 
-        {/* Registration Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Role Selection Tabs */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl mb-2">
-            <button
-              type="button"
-              onClick={() => setRole('BUYER')}
-              className={`py-2 text-xs font-bold rounded-xl transition ${
-                role === 'BUYER' 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              I am a Buyer
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('SUPPLIER')}
-              className={`py-2 text-xs font-bold rounded-xl transition ${
-                role === 'SUPPLIER' 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              I am a Supplier
-            </button>
-          </div>
-
-          {/* Full Name Input */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Full Name</label>
-            <div className="relative">
-              <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                required
-                placeholder="John Doe"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Email Input */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Email Address</label>
-            <div className="relative">
-              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="email"
-                required
-                placeholder="name@company.com"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Password Input */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Password</label>
-            <div className="relative">
-              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                placeholder="••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
-          >
-            {isLoading ? (
-              <span>Creating Account...</span>
-            ) : (
-              <>
-                <span>Register as {role === 'BUYER' ? 'Buyer' : 'Supplier'}</span>
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Footer Link */}
-        <div className="text-center mt-6 pt-6 border-t border-slate-800">
-          <p className="text-xs text-slate-400">
-            Already have an account?{' '}
-            <Link to="/login" className="text-indigo-400 font-bold hover:underline">
-              Sign In
-            </Link>
-          </p>
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Full Name</label>
+          <input
+            type="text"
+            name="name"
+            required
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="John Doe"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          />
         </div>
 
-      </div>
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Email Address</label>
+          <input
+            type="email"
+            name="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="user@example.com"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Phone Number</label>
+          <input
+            type="text"
+            name="phone"
+            required
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="9876543210"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Account Role</label>
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          >
+            <option value="BUYER">Buyer</option>
+            <option value="SUPPLIER">Supplier</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">Password</label>
+          <input
+            type="password"
+            name="password"
+            required
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition text-sm disabled:opacity-50 mt-4 shadow-lg shadow-indigo-600/20"
+        >
+          {loading ? 'Registering...' : 'Create Account'}
+        </button>
+
+        <p className="text-xs text-center text-slate-400 mt-4">
+          Already have an account?{' '}
+          <Link to="/login" className="text-indigo-400 hover:underline font-semibold">
+            Sign In Here
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }

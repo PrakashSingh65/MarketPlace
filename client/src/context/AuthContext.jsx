@@ -4,131 +4,86 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Base API URL
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-  // Restore session on mount
+  // Check initial authentication state
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
+    const checkUserAuth = async () => {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse stored user data:', e);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        const res = await fetch('/api/auth/check-auth', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Check auth error:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    checkUserAuth();
   }, []);
 
-  // Set Local Session State & LocalStorage
-  const handleAuthSuccess = (userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
-    localStorage.setItem('token', authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  // Login Function (API Call)
+  // Login handler aligned with your backend response
   const login = async (credentials) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
 
-      const data = await response.json();
+    const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      if (data.token && data.user) {
-        handleAuthSuccess(data.user, data.token);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Login Error:', error.message);
-      throw error;
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Login failed');
     }
+
+    // Backend responds with user object directly
+    setUser(data);
+    return data;
   };
 
-  // Register Function
-  const register = async (formData) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  // Register handler
+  const register = async (userData) => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
 
-      const data = await response.json();
+    const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Auto-login after registration
-      if (data.token && data.user) {
-        handleAuthSuccess(data.user, data.token);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Registration Error:', error.message);
-      throw error;
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || 'Registration failed');
     }
+
+    return data;
   };
 
-  // Logout Function
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('cart');
-
-    window.location.href = '/login';
+  // Logout handler
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        login,
-        register,
-        logout,
-        loading,
-        isAuthenticated: !!token && !!user,
-        isSupplier: user?.role === 'SUPPLIER',
-        isBuyer: user?.role === 'BUYER'
-      }}
-    >
-      {!loading && children}
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Easy Usage Custom Hook
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

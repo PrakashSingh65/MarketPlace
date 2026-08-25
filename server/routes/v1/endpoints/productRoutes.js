@@ -4,9 +4,9 @@ import {
   addProduct,
   getProductById,
   deleteProduct,
-} from '../controllers/productController.js';
-import upload from '../middleware/upload.js';
-import Product from '../models/Product.js';
+} from '../../../controllers/productController.js';
+import upload from '../../../middleware/upload.js';
+import Product from '../../../models/Product.js';
 
 const router = express.Router();
 

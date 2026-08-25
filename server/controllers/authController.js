@@ -80,16 +80,3 @@ export const checkAuth = asyncHandler(async (req, res) => {
     .status(200)
     .json(req.user, { message: "User is authenticated", success: true });
 });
-
-export const allUsers = asyncHandler(async (req, res) => {
-  const users = await User.find();
-
-  if (!users || users.length === 0) {
-    return res.status(404).json({ message: "No users found", success: false });
-  }
-
-  res.status(200).json(users, {
-    message: "Users fetched successfully",
-    success: true,
-  });
-});

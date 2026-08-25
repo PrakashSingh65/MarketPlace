@@ -20,21 +20,17 @@ export default function Profile() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Navigation State
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
 
-  // Edit Toggles
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
 
-  // Payment States
   const [upiList, setUpiList] = useState([]);
   const [newUpi, setNewUpi] = useState('');
   const [showAddUpi, setShowAddUpi] = useState(false);
 
-  // Address States
   const [addresses, setAddresses] = useState([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressData, setAddressData] = useState({
@@ -48,7 +44,6 @@ export default function Profile() {
     type: 'Home'
   });
 
-  // User Profile Data State
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -57,7 +52,6 @@ export default function Profile() {
     phone: ''
   });
 
-  // Fetch Profile & Addresses on Load
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -73,14 +67,12 @@ export default function Profile() {
           });
         }
 
-        // Fetch Addresses from backend
         const addressRes = await API.get('/users/addresses');
         if (addressRes.data) {
           setAddresses(addressRes.data);
         }
       } catch (err) {
         console.error("Error fetching user data:", err);
-        // Context Fallback
         if (user) {
           const nameParts = (user.name || '').split(' ');
           setFormData({
@@ -99,7 +91,6 @@ export default function Profile() {
     fetchInitialData();
   }, [user]);
 
-  // Profile Save Handler
   const handleSaveProfile = async (type) => {
     try {
       await API.put('/users/profile', formData);
@@ -113,7 +104,6 @@ export default function Profile() {
     }
   };
 
-  // Address Form Submit Handler
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -133,13 +123,11 @@ export default function Profile() {
       alert('Address saved successfully!');
     } catch (err) {
       console.error("Error saving address:", err);
-      // Fallback for UI if API endpoint is not ready
       setAddresses([...addresses, addressData]);
       setShowAddressForm(false);
     }
   };
 
-  // Delete Address Handler
   const handleDeleteAddress = async (index, addressId) => {
     try {
       if (addressId) {
@@ -152,7 +140,6 @@ export default function Profile() {
     }
   };
 
-  // UPI Add Handler
   const handleAddUpi = (e) => {
     e.preventDefault();
     if (!newUpi.includes('@')) {
@@ -164,12 +151,10 @@ export default function Profile() {
     setShowAddUpi(false);
   };
 
-  // Delete UPI Handler
   const handleDeleteUpi = (index) => {
     setUpiList(upiList.filter((_, i) => i !== index));
   };
 
-  // Logout Handler
   const handleLogout = () => {
     if (logout) logout();
     localStorage.removeItem('userInfo');
@@ -181,10 +166,8 @@ export default function Profile() {
     <div className="bg-[#f1f3f6] min-h-screen text-slate-800 py-4 px-2 md:px-12">
       <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row gap-4">
         
-        {/* Sidebar */}
         <div className="w-full md:w-1/4 flex flex-col gap-3">
           
-          {/* Header Card */}
           <div className="bg-white p-4 rounded-sm shadow-sm flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl">
               👦
@@ -197,10 +180,8 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Sidebar Menu */}
           <div className="bg-white rounded-sm shadow-sm">
             
-            {/* My Orders */}
             <div 
               onClick={() => navigate('/orders')}
               className="flex justify-between items-center p-4 border-b border-gray-100 cursor-pointer hover:bg-slate-50 text-gray-700 font-semibold"
@@ -212,7 +193,6 @@ export default function Profile() {
               <ChevronRight size={16} className="text-gray-400" />
             </div>
 
-            {/* Account Settings */}
             <div className="border-b border-gray-100">
               <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
                 <User size={18} className="text-blue-600" />
@@ -234,7 +214,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Payments */}
             <div className="border-b border-gray-100">
               <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
                 <CreditCard size={18} className="text-blue-600" />
@@ -263,7 +242,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* My Stuff */}
             <div className="border-b border-gray-100">
               <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
                 <Folder size={18} className="text-blue-600" />
@@ -297,7 +275,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Logout */}
             <div 
               onClick={handleLogout}
               className="p-4 flex items-center gap-3 text-gray-700 font-semibold cursor-pointer hover:bg-slate-50"
@@ -307,7 +284,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div className="bg-white p-4 rounded-sm shadow-sm text-xs text-gray-500">
             <p className="font-semibold text-gray-700 mb-2">Frequently Visited:</p>
             <div className="flex gap-4">
@@ -321,7 +297,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Content Area */}
         <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-[500px]">
           
           {loading ? (
@@ -330,7 +305,6 @@ export default function Profile() {
             </div>
           ) : (
             <>
-              {/* Profile Information */}
               {activeTab === 'profile' && (
                 <>
                   <div>
@@ -397,7 +371,6 @@ export default function Profile() {
                     )}
                   </div>
 
-                  {/* Email */}
                   <div>
                     <div className="flex items-center gap-6 mb-3">
                       <h2 className="text-lg font-bold text-gray-800">Email Address</h2>
@@ -427,7 +400,6 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  {/* Phone */}
                   <div>
                     <div className="flex items-center gap-6 mb-3">
                       <h2 className="text-lg font-bold text-gray-800">Mobile Number</h2>
@@ -459,7 +431,6 @@ export default function Profile() {
                 </>
               )}
 
-              {/* Manage Addresses View */}
               {activeTab === 'addresses' && (
                 <div>
                   <div className="flex justify-between items-center mb-4">
@@ -472,7 +443,6 @@ export default function Profile() {
                     </button>
                   </div>
 
-                  {/* Address Form */}
                   {showAddressForm && (
                     <form onSubmit={handleAddressSubmit} className="bg-slate-50 p-4 border border-gray-200 mb-4 rounded-sm flex flex-col gap-3">
                       <div className="flex gap-3">
@@ -524,7 +494,6 @@ export default function Profile() {
                         />
                       </div>
 
-                      {/* Address Type Selector */}
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-gray-500 font-semibold">Address Type</label>
                         <div className="flex gap-6 text-xs text-gray-700">
@@ -557,7 +526,6 @@ export default function Profile() {
                     </form>
                   )}
 
-                  {/* Saved Addresses List */}
                   {addresses.length === 0 ? (
                     <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
                       No addresses saved yet.
@@ -587,7 +555,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Saved UPI */}
               {activeTab === 'saved-upi' && (
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center border-b border-gray-100 pb-2">
@@ -636,7 +603,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Static Views */}
               {activeTab === 'gift-cards' && (
                 <div>
                   <h2 className="text-lg font-bold text-gray-800 mb-4">Gift Cards</h2>

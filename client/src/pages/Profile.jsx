@@ -1,7 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
 import { 
   Package, 
   User, 
@@ -17,7 +15,6 @@ import {
 } from 'lucide-react';
 
 export default function Profile() {
-  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('profile');
@@ -52,44 +49,7 @@ export default function Profile() {
     phone: ''
   });
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
-      try {
-        const profileRes = await API.get('/users/profile');
-        if (profileRes.data) {
-          setFormData({
-            firstName: profileRes.data.firstName || '',
-            lastName: profileRes.data.lastName || '',
-            gender: profileRes.data.gender || 'Male',
-            email: profileRes.data.email || '',
-            phone: profileRes.data.phone || ''
-          });
-        }
-
-        const addressRes = await API.get('/users/addresses');
-        if (addressRes.data) {
-          setAddresses(addressRes.data);
-        }
-      } catch (err) {
-        console.error("Error fetching user data:", err);
-        if (user) {
-          const nameParts = (user.name || '').split(' ');
-          setFormData({
-            firstName: nameParts[0] || '',
-            lastName: nameParts.slice(1).join(' ') || '',
-            gender: user.gender || 'Male',
-            email: user.email || '',
-            phone: user.phone || ''
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [user]);
+ 
 
   const handleSaveProfile = async (type) => {
     try {

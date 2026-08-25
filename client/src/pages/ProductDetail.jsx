@@ -6,14 +6,11 @@ import {
   Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
-import { useCart } from '../context/CartContext';
+
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // Clean useCart hook usage
-  const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');

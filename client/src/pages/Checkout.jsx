@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, ExternalLink, Edit2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useCart } from '../context/CartContext';
 
 export default function Checkout({ onOrderPlaced }) {
-  const { cart = [], clearCart } = useCart();
 
   const [shippingAddress, setShippingAddress] = useState({
     name: '',

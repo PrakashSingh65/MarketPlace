@@ -1,11 +1,9 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 
 export default function Marketplace({ selectedCategory }) {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const { addToCart } = useCart();
 
   // Expanded Product Inventory for All Searches
   const products = [

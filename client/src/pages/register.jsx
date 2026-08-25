@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -13,8 +12,7 @@ export default function Register() {
 
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { register } = useAuth();
+  
   const navigate = useNavigate();
 
   const handleChange = (e) => {

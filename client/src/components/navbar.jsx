@@ -5,31 +5,9 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
-import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
-  const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const { cart = [] } = useCart() || {};
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('userInfo');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
-    setUser(null);
-    setIsUserMenuOpen(false);
-    navigate('/login');
-  };
-
-  const totalQuantity = cart.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
 
   return (
     <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 w-full">
@@ -60,14 +38,14 @@ export default function Navbar() {
         >
           <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 hover:text-orange-400">
             <User size={18} className="text-orange-400" /> 
-            {user ? (user.name || 'Account') : 'Login'} 
+            {/* {user ? (user.name || 'Account') : 'Login'}  */}
             <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isUserMenuOpen && (
             <div className="absolute right-0 top-full bg-[#0f0c1b] border border-purple-900/60 rounded-2xl shadow-2xl w-60 py-3 z-50 mt-1 backdrop-blur-xl divide-y divide-purple-900/30 text-slate-200">
               <div className="px-4 pb-2.5 flex items-center justify-between">
-                {!user ? (
+                {/* {!user ? (
                   <p className="text-xs text-slate-400">
                     New customer? <Link to="/signup" className="text-orange-400 font-bold hover:underline">Sign Up</Link>
                   </p>
@@ -75,7 +53,7 @@ export default function Navbar() {
                   <p className="text-xs text-slate-400">
                     Logged in as <span className="text-orange-400 font-bold">{user.name}</span>
                   </p>
-                )}
+                )} */}
               </div>
 
               <div className="py-2 space-y-0.5">
@@ -114,26 +92,26 @@ export default function Navbar() {
                 </Link>
               </div>
 
-              {user && (
+              {/* {user && (
                 <div className="pt-2">
                   <button onClick={handleLogout} className="w-full text-left flex items-center gap-3 px-4 py-2 text-xs text-red-400 font-bold hover:bg-red-950/30 transition">
                     <X size={16} className="text-red-400" /> Logout
                   </button>
                 </div>
-              )}
+              )} */}
             </div>
           )}
         </div>
 
         {/* Cart */}
-        <Link to="/cart" className="flex items-center gap-1 font-semibold text-slate-200 hover:text-cyan-400 relative">
+        {/* <Link to="/cart" className="flex items-center gap-1 font-semibold text-slate-200 hover:text-cyan-400 relative">
           <ShoppingCart size={18} /> Cart
           {totalQuantity > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full absolute -top-2 -right-3 shadow-[0_0_8px_#ef4444]">
               {totalQuantity}
             </span>
           )}
-        </Link>
+        </Link> */}
       </div>
 
     </div>

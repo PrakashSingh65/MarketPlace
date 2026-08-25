@@ -1,10 +1,8 @@
 import React from 'react';
 import { ShieldCheck, Trash2, Bookmark, Zap, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
-import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
-  const { cart = [], removeFromCart, updateQuantity } = useCart();
   const navigate = useNavigate();
 
   // Har product ke liye platform fee setup (Default ₹19 per item quantity)

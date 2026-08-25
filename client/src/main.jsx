@@ -1,22 +1,24 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import '@fontsource/inter';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "@fontsource/inter";
 
-import App from './App';
-import { AuthProvider } from './context/AuthContext';
+import "./index.css";
+import { RouterProvider } from "react-router-dom";
+import router from "./routes/AppRoutes";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { Provider } from "react-redux";
+import { store } from "./redux/store";
 
-import './index.css';
-import { RouterProvider } from 'react-router-dom';
-import router from './routes/AppRoutes';
+const queryClient = new QueryClient();
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
 
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <AuthProvider>
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-      </AuthProvider>
-    </React.StrictMode>
+      </QueryClientProvider>
+    </Provider>,
   );
 }

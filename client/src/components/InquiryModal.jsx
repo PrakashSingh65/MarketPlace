@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Loader2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
 export default function InquiryModal({ isOpen, onClose, product }) {
-  const { user } = useAuth();
   const [quantity, setQuantity] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);

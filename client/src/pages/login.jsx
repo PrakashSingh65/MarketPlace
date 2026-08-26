@@ -1,109 +1,167 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-export default function Login() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errorMsg, setErrorMsg] = useState("");
+const Login = () => {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
 
+  // Handle Input Changes
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    // Typing shuru karte hi error clean kar do
+    if (errorMessage) setErrorMessage("");
   };
 
+  // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg("");
     setLoading(true);
+    setErrorMessage("");
 
     try {
-      const userData = await login({
-        email: formData.email.trim(),
-        password: formData.password,
-      });
+      // API call with credentials (cookies send/receive ke liye)
+      const res = await axios.post(
+        "http://localhost:5000/api/v1/user/login", // Apni API Ka Backend Route Likhein
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true, // HTTP-Only Cookie save karne ke liye critical hai
+        }
+      );
 
-      const role = userData?.role?.toUpperCase();
+      // Backend Success Response Handling
+      if (res.data.success) {
+        // Optional: Local state ya auth context me user save kar sakte hain
+        // const userData = res.data.user;
 
-      if (role === "SUPPLIER") {
-        navigate("/supplier-dashboard");
-      } else {
-        navigate("/marketplace");
+        // Redirect user to dashboard/home page after success
+        navigate("/dashboard");
       }
-    } catch (err) {
-      console.error("Login Error:", err);
-      setErrorMsg(err.message || "Invalid Email or Password");
+    } catch (error) {
+      // Backend Error Response Handling (400, 401, 404, 500 etc.)
+      if (error.response && error.response.data) {
+        setErrorMessage(error.response.data.message || "Invalid Email or Password");
+      } else {
+        setErrorMessage("Network error. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-slate-900 p-8 rounded-2xl border border-slate-800 w-full max-w-md space-y-5 shadow-2xl"
-      >
-        <h2 className="text-2xl font-bold text-white text-center">
-          Sign In to Your Account
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+          <p className="text-sm text-gray-600 mt-2">
+            Please enter your credentials to log in
+          </p>
+        </div>
 
-        {errorMsg && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg text-xs text-center font-medium">
-            {errorMsg}
+        {/* Global Error Alert */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm text-center">
+            {errorMessage}
           </div>
         )}
 
-        <div className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email Field */}
           <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
-            <input
-              type="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="user@example.com"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <Mail size={18} />
+              </div>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              />
+            </div>
           </div>
 
+          {/* Password Field */}
           <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                <Lock size={18} />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition text-sm disabled:opacity-50 mt-2 shadow-lg shadow-indigo-600/20"
-        >
-          {loading ? "Logging in..." : "Sign In"}
-        </button>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg flex items-center justify-center transition duration-200 disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin mr-2" size={20} />
+                Logging in...
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </button>
+        </form>
 
-        <p className="text-xs text-center text-slate-400 mt-4">
+        {/* Footer Links */}
+        <div className="text-center text-sm text-gray-600">
           Don't have an account?{" "}
           <Link
             to="/register"
-            className="text-indigo-400 hover:underline font-semibold"
+            className="font-medium text-indigo-600 hover:text-indigo-500 underline"
           >
-            Register Here
+            Sign up
           </Link>
-        </p>
-      </form>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Login;

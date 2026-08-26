@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Loader2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 export default function InquiryModal({ isOpen, onClose, product }) {
+  const { user } = useSelector((state) => state.auth);
   const [quantity, setQuantity] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -155,7 +157,7 @@ export default function InquiryModal({ isOpen, onClose, product }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-linear-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

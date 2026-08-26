@@ -1,9 +1,11 @@
 import React from 'react';
 import { ShieldCheck, Trash2, Bookmark, Zap, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import useCart from '../hooks/useCart';
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { cart, updateQuantity, removeFromCart } = useCart();
 
   // Har product ke liye platform fee setup (Default ₹19 per item quantity)
   const PER_ITEM_PLATFORM_FEE = 19;
@@ -91,7 +93,7 @@ export default function Cart() {
                   <div className="flex gap-4 sm:gap-6">
                     
                     {/* Item Image */}
-                    <div className="w-24 h-24 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex items-center justify-center flex-shrink-0">
+                    <div className="w-24 h-24 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex items-center justify-center shrink-0">
                       <img 
                         src={item.image || item.imageUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="14">No Image</text></svg>'} 
                         alt={item.title || item.name} 
@@ -205,7 +207,7 @@ export default function Cart() {
 
               {/* Security info */}
               <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <ShieldCheck size={20} className="text-emerald-400 flex-shrink-0" />
+                <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
                 <span>Safe & Secure Payments. 100% Authentic Products.</span>
               </div>
 

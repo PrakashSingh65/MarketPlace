@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { axiosClient } from "./axiosClient";
 
 export const useSignup = () => {
@@ -30,7 +30,7 @@ export const useSignIn = () => {
 
 export const useSignOut = () => {
     return useMutation({
-        mutationFn: async (formData) => {
+        mutationFn: async () => {
             const response = await axiosClient.post("/auth/logout", {}, {
                 withCredentials: true
             });

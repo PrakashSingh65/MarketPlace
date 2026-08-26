@@ -142,7 +142,7 @@ export default function MarketplaceHome() {
           {banners.map((b, idx) => (
             <div 
               key={idx} 
-              className={`bg-gradient-to-r ${b.bg} text-white rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-48 shadow-md`}
+              className={`bg-linear-to-r ${b.bg} text-white rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-48 shadow-md`}
             >
               <div>
                 <div className="flex justify-between items-start">

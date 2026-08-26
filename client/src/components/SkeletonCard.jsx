@@ -2,7 +2,7 @@ export default function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl shadow-md overflow-hidden">
       {/* Gradient header placeholder */}
-      <div className="h-36 bg-gradient-to-br from-slate-200 to-slate-300 animate-pulse" />
+      <div className="h-36 bg-linear-to-br from-slate-200 to-slate-300 animate-pulse" />
       {/* Content */}
       <div className="p-5 space-y-3">
         <div className="h-5 bg-slate-200 rounded-lg w-3/4 animate-pulse" />

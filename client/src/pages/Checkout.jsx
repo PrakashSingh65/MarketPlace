@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, ExternalLink, Edit2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import useCart from '../hooks/useCart';
 
 export default function Checkout({ onOrderPlaced }) {
+  const { cart, clearCart } = useCart();
 
   const [shippingAddress, setShippingAddress] = useState({
     name: '',
@@ -233,7 +235,7 @@ export default function Checkout({ onOrderPlaced }) {
                   
                   {/* Enter Personal UPI ID */}
                   <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-2">
-                    <Edit2 size={14} className="text-indigo-400 flex-shrink-0" />
+                    <Edit2 size={14} className="text-indigo-400 shrink-0" />
                     <input
                       type="text"
                       value={upiId}
@@ -244,7 +246,7 @@ export default function Checkout({ onOrderPlaced }) {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-5">
-                    <div className="bg-white p-2.5 rounded-2xl border border-slate-700 shadow-lg flex-shrink-0">
+                    <div className="bg-white p-2.5 rounded-2xl border border-slate-700 shadow-lg shrink-0">
                       <QRCodeSVG 
                         value={upiPayUrl} 
                         size={120} 
@@ -297,7 +299,7 @@ export default function Checkout({ onOrderPlaced }) {
                   cart.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center text-xs">
                       <div>
-                        <p className="text-slate-200 font-semibold truncate max-w-[150px]">{item.title || item.name}</p>
+                        <p className="text-slate-200 font-semibold truncate max-w-37.5">{item.title || item.name}</p>
                         <p className="text-[10px] text-slate-500">Qty: {item.quantity || 1}</p>
                       </div>
                       <span className="font-bold text-white">₹{Number(item.price) * (item.quantity || 1)}</span>

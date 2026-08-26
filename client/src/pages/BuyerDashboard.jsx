@@ -89,7 +89,7 @@ export default function BuyerDashboard() {
         {error && (
           <div className="bg-rose-950/40 border border-rose-800/60 text-rose-300 p-4 rounded-2xl text-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <AlertCircle size={18} className="text-rose-400 flex-shrink-0" />
+              <AlertCircle size={18} className="text-rose-400 shrink-0" />
               <span>Could not load orders from server ({error}). Please check your API backend.</span>
             </div>
             <button 

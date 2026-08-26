@@ -1,7 +1,9 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
+import useCart from '../hooks/useCart';
 
 export default function Marketplace({ selectedCategory }) {
+  const { addToCart } = useCart();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 

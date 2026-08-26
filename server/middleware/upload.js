@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
     cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
-
+              
 // File Type Validation
 function checkFileTypes(file, cb) {
   const filetypes = /jpg|jpeg|png|webp/;

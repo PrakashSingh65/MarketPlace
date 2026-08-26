@@ -7,7 +7,7 @@ export default function HeroSection() {
     <section className="relative bg-[#070714] text-white py-12 px-4 sm:px-6 lg:px-8 overflow-hidden rounded-3xl border border-purple-900/40 my-4 max-w-7xl mx-auto shadow-[0_0_50px_rgba(112,0,255,0.2)]">
       
       {/* Dynamic Glowing Background Orbs & Dust */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-r from-orange-500/20 via-purple-600/30 to-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-linear-to-r from-orange-500/20 via-purple-600/30 to-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-orange-600/20 rounded-full blur-[90px] pointer-events-none" />
       <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-600/20 rounded-full blur-[90px] pointer-events-none" />
 
@@ -23,11 +23,11 @@ export default function HeroSection() {
             <span className="text-[10px] font-extrabold tracking-widest text-orange-400 uppercase bg-orange-950/80 border border-orange-500/30 px-2 py-0.5 rounded-full">
               Innovate. Design.
             </span>
-            <h3 className="text-xl font-black mt-3 bg-gradient-to-r from-orange-200 to-amber-400 bg-clip-text text-transparent">
+            <h3 className="text-xl font-black mt-3 bg-linear-to-r from-orange-200 to-amber-400 bg-clip-text text-transparent">
               Inspire.
             </h3>
             <p className="text-xs text-slate-400 mt-2">Next-gen UI elements and cosmic design aesthetics.</p>
-            <button className="mt-4 px-4 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xs shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:scale-105 transition flex items-center gap-1">
+            <button className="mt-4 px-4 py-1.5 rounded-xl bg-linear-to-r from-orange-500 to-red-600 text-white font-bold text-xs shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:scale-105 transition flex items-center gap-1">
               Explore <ArrowRight size={12} />
             </button>
           </div>
@@ -38,7 +38,7 @@ export default function HeroSection() {
             <h3 className="text-lg font-extrabold text-blue-300">We Create <br /><span className="text-cyan-400">Digital Magic</span></h3>
             <p className="text-xs text-slate-400 mt-1">High-performance React components with cyber glow.</p>
             <div className="mt-4 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-600 w-3/4 rounded-full animate-pulse" />
+              <div className="h-full bg-linear-to-r from-cyan-400 to-blue-600 w-3/4 rounded-full animate-pulse" />
             </div>
           </div>
 
@@ -74,7 +74,7 @@ export default function HeroSection() {
           <div className="space-y-5 my-auto">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
               Build Stunning <br />
-              <span className="bg-gradient-to-r from-orange-400 via-pink-500 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(249,115,22,0.4)]">
+              <span className="bg-linear-to-r from-orange-400 via-pink-500 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(249,115,22,0.4)]">
                 Web Experiences
               </span>
             </h1>
@@ -86,7 +86,7 @@ export default function HeroSection() {
             <div className="pt-2 flex flex-wrap gap-4">
               <Link 
                 to="/products"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white font-extrabold text-sm shadow-[0_0_25px_rgba(249,115,22,0.6)] hover:shadow-[0_0_35px_rgba(249,115,22,0.8)] hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-linear-to-r from-orange-500 via-red-500 to-pink-600 text-white font-extrabold text-sm shadow-[0_0_25px_rgba(249,115,22,0.6)] hover:shadow-[0_0_35px_rgba(249,115,22,0.8)] hover:scale-105 transition-all duration-300 flex items-center gap-2"
               >
                 Get Started Now <ArrowRight size={16} />
               </Link>
@@ -146,11 +146,11 @@ export default function HeroSection() {
           {/* Card 2: Crafted for Performance */}
           <div className="flex-1 bg-[#0f0c1b]/80 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 relative overflow-hidden">
             <div className="h-20 bg-slate-900/80 rounded-xl mb-3 border border-cyan-500/20 overflow-hidden relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-purple-500/20 to-cyan-500/20 animate-pulse" />
+              <div className="absolute inset-0 bg-linear-to-r from-orange-500/20 via-purple-500/20 to-cyan-500/20 animate-pulse" />
               <p className="text-xs font-bold text-cyan-300 relative z-10">⚡ 60 FPS Smooth Render</p>
             </div>
             <h4 className="text-sm font-bold text-slate-200">Crafted for Performance</h4>
-            <button className="mt-2 w-full py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+            <button className="mt-2 w-full py-1.5 rounded-lg bg-linear-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]">
               View Benchmarks
             </button>
           </div>

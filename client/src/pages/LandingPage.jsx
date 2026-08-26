@@ -26,6 +26,8 @@ export default function LandingPage() {
         }
       } catch (err) {
         console.error('Error fetching featured products:', err);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -94,7 +96,7 @@ export default function LandingPage() {
             alt="Hero textile background" 
             className="w-full h-full object-cover object-center scale-105 filter brightness-75 contrast-125"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.15),transparent_70%)]" />
         </div>
 
@@ -107,7 +109,7 @@ export default function LandingPage() {
           
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl leading-[1.15] mb-8">
             Source Wholesale Fabrics <br className="hidden sm:block" />
-            Directly From <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-300 to-emerald-400">Verified Mills & Direct Suppliers</span>
+            Directly From <span className="bg-clip-text text-transparent bg-linear-to-r from-indigo-400 via-violet-300 to-emerald-400">Verified Mills & Direct Suppliers</span>
           </h1>
 
           <p className="text-lg sm:text-2xl text-slate-300 max-w-3xl font-light leading-relaxed mb-10">
@@ -117,7 +119,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto">
             <Link 
               to="/marketplace" 
-              className="px-8 py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group"
+              className="px-8 py-4 bg-linear-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group"
             >
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
               <span>Explore Marketplace</span>
@@ -225,7 +227,7 @@ export default function LandingPage() {
                   className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 filter brightness-90 contrast-110"
                 />
                 
-                <div className={`absolute inset-0 bg-gradient-to-t ${cat.color} opacity-90 group-hover:opacity-95 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 bg-linear-to-t ${cat.color} opacity-90 group-hover:opacity-95 transition-opacity duration-300`} />
 
                 <div className="relative z-10 p-8 h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
@@ -348,7 +350,7 @@ export default function LandingPage() {
 
       {/* FINAL CTA BANNER */}
       <section className="pb-24 px-6 max-w-7xl mx-auto">
-        <div className="relative rounded-3xl p-10 sm:p-16 overflow-hidden border border-indigo-500/30 bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 shadow-2xl">
+        <div className="relative rounded-3xl p-10 sm:p-16 overflow-hidden border border-indigo-500/30 bg-linear-to-r from-indigo-900 via-indigo-950 to-slate-950 shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
           <div className="relative z-10 max-w-3xl">
             <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-6 leading-tight">
@@ -361,7 +363,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
                 to="/register" 
-                className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-indigo-500/30 hover:scale-105 transition-all text-center"
+                className="px-8 py-4 bg-linear-to-r from-indigo-500 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-indigo-500/30 hover:scale-105 transition-all text-center"
               >
                 Create Free Account
               </Link>

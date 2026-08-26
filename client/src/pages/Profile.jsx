@@ -1,5 +1,8 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { axiosClient } from '../api/axiosClient';
+import { logout } from '../redux/slice/authSlice';
 import { 
   Package, 
   User, 
@@ -16,6 +19,9 @@ import {
 
 export default function Profile() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const API = axiosClient;
 
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
@@ -116,7 +122,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    if (logout) logout();
+    dispatch(logout());
     localStorage.removeItem('userInfo');
     localStorage.removeItem('token');
     navigate('/login');
@@ -124,7 +130,7 @@ export default function Profile() {
 
   return (
     <div className="bg-[#f1f3f6] min-h-screen text-slate-800 py-4 px-2 md:px-12">
-      <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row gap-4">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4">
         
         <div className="w-full md:w-1/4 flex flex-col gap-3">
           
@@ -257,7 +263,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-[500px]">
+        <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-125">
           
           {loading ? (
             <div className="flex justify-center items-center h-64">

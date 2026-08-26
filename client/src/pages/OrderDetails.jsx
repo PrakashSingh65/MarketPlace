@@ -176,7 +176,7 @@ export default function OrderDetails() {
             <div className="space-y-3">
               {order.items && order.items.map((item, idx) => (
                 <div key={idx} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex gap-4 sm:gap-6 shadow-xl">
-                  <div className="w-24 h-24 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex items-center justify-center flex-shrink-0">
+                  <div className="w-24 h-24 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex items-center justify-center shrink-0">
                     <img 
                       src={item.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800'} 
                       alt={item.title} 
@@ -205,13 +205,13 @@ export default function OrderDetails() {
               </div>
               
               {!isCancelled ? (
-                <div className="relative pl-6 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800">
+                <div className="relative pl-6 space-y-8 before:absolute before:left-2.75 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
                   {timelineSteps.map((step, idx) => {
                     const isDone = step.completed;
                     return (
                       <div key={idx} className="relative flex items-start gap-4">
                         {/* Status Icon Indicator */}
-                        <div className={`absolute -left-[31px] bg-slate-900 rounded-full p-0.5 ${isDone ? 'text-emerald-400' : 'text-slate-600'}`}>
+                        <div className={`absolute -left-7.75 bg-slate-900 rounded-full p-0.5 ${isDone ? 'text-emerald-400' : 'text-slate-600'}`}>
                           {isDone ? <CheckCircle2 size={20} className="fill-emerald-950" /> : <Circle size={20} />}
                         </div>
 

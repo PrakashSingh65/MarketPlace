@@ -24,12 +24,12 @@ export const register = asyncHandler(async (req, res) => {
 
   if (newUser) {
     generateToken(newUser._id, res);
-    res.status(201).json({
+    return res.status(201).json({
       message: "user registered successfully",
       success: true,
     });
   } else {
-    res.status(409).json({
+    return res.status(409).json({
       message: "User registration failed",
       success: false,
     });
@@ -39,7 +39,7 @@ export const register = asyncHandler(async (req, res) => {
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const userExists = await User.findOne({ email });
+  const userExists = await User.findOne({ email }).select("+password");
 
   if (!userExists) {
     return res.status(409).json({
@@ -49,19 +49,21 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const isPasswordValid = await userExists.comparePassword(password);
+  console.log("Password valid:", isPasswordValid);
 
   if (!isPasswordValid) {
-    res.status(200).json({
+    return res.status(200).json({
       message: "Invalid credentials",
       success: false,
     });
-
-    generateToken(userExists._id, res);
-    res.status(200).json(userExists, {
-      message: "User logged in successfully",
-      success: true,
-    });
   }
+
+  generateToken(userExists._id, res);
+
+  return res.status(200).json({
+    message: "User logged in successfully",
+    success: true,
+  });
 });
 
 export const logout = asyncHandler(async (req, res) => {
@@ -70,13 +72,13 @@ export const logout = asyncHandler(async (req, res) => {
     sameSite: "none",
     secure: true,
   });
-  res
+  return res
     .status(200)
     .json({ message: "User logged out successfully", success: true });
 });
 
 export const checkAuth = asyncHandler(async (req, res) => {
-  res
+  return res
     .status(200)
-    .json(req.user, { message: "User is authenticated", success: true });
+    .json({ message: "User is authenticated", success: true, user: req.user, });
 });

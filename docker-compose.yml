@@ -1,6 +1,35 @@
+# services:
+#   backend:
+#     build: ./server
+#     container_name: texmarket_backend
+#     ports:
+#       - "5000:5000"
+#     volumes:
+#       - ./server:/app
+#       - /app/node_modules
+#     environment:
+#       - CLIENT_URL=http://localhost:5173
+#       - NODE_ENV=development
+#     env_file:
+#       - ./server/.env
+
+#   frontend:
+#     build: ./client
+#     container_name: texmarket_frontend
+#     ports:
+#       - "5173:5173"
+#     volumes:
+#       - ./client:/app
+#       - /app/node_modules
+#     environment:
+#       - VITE_API_URL=http://localhost:5000
+
+
+
 services:
   backend:
-    build: ./server
+    build:
+      context: ./server
     container_name: texmarket_backend
     ports:
       - "5000:5000"
@@ -8,13 +37,15 @@ services:
       - ./server:/app
       - /app/node_modules
     environment:
-      - CLIENT_URL=http://localhost:5173
-      - NODE_ENV=development
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: development
     env_file:
       - ./server/.env
+    command: npm run dev
 
   frontend:
-    build: ./client
+    build:
+      context: ./client
     container_name: texmarket_frontend
     ports:
       - "5173:5173"
@@ -22,4 +53,5 @@ services:
       - ./client:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:5000
+      VITE_API_URL: http://localhost:5000
+    command: npm run dev -- --host 0.0.0.0

@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useSignIn } from "../api/authApi";
+import { setUser } from "../redux/slice/authSlice";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,10 +12,12 @@ const Login = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: login, isPending: loading } = useSignIn();
 
   // Handle Input Changes
   const handleChange = (e) => {
@@ -20,46 +25,38 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Typing shuru karte hi error clean kar do
     if (errorMessage) setErrorMessage("");
   };
 
   // Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMessage("");
 
     try {
-      // API call with credentials (cookies send/receive ke liye)
-      const res = await axios.post(
-        "http://localhost:5000/api/v1/user/login", // Apni API Ka Backend Route Likhein
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true, // HTTP-Only Cookie save karne ke liye critical hai
+      const response = await login({
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+      });
+
+      if (response.success) {
+        // Run checkAuth again
+        const authData = await queryClient.fetchQuery({
+          queryKey: ["user"],
+        });
+
+        if (authData?.user) {
+          navigate("/dashboard");
         }
-      );
-
-      // Backend Success Response Handling
-      if (res.data.success) {
-        // Optional: Local state ya auth context me user save kar sakte hain
-        // const userData = res.data.user;
-
-        // Redirect user to dashboard/home page after success
-        navigate("/dashboard");
       }
     } catch (error) {
-      // Backend Error Response Handling (400, 401, 404, 500 etc.)
-      if (error.response && error.response.data) {
-        setErrorMessage(error.response.data.message || "Invalid Email or Password");
+      if (error.response?.data) {
+        setErrorMessage(
+          error.response.data.message || "Invalid Email or Password",
+        );
       } else {
         setErrorMessage("Network error. Please try again later.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 

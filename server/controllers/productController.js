@@ -1,10 +1,9 @@
 import Product from '../models/Product.js';
+import { uploadOnCloudinary } from '../config/cloudinary.js';
 
-// Get All Products (Filter & Search query options included)
 export const getProducts = async (req, res) => {
   try {
     const { category, subCategory, keyword } = req.query;
-
     let query = {};
 
     if (category) {
@@ -24,7 +23,26 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// Get Single Product by ID
+export const getProductsByCategory = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const { subCategory } = req.query;
+
+    const query = { 
+      category: { $regex: new RegExp(`^${categoryName}$`, 'i') } 
+    };
+
+    if (subCategory) {
+      query.subCategory = { $regex: new RegExp(`^${subCategory}$`, 'i') };
+    }
+
+    const products = await Product.find(query).sort({ createdAt: -1 });
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching category products', error: error.message });
+  }
+};
+
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -38,7 +56,6 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// Add New Product
 export const addProduct = async (req, res) => {
   try {
     const {
@@ -56,8 +73,15 @@ export const addProduct = async (req, res) => {
       colors,
     } = req.body;
 
-    // Multer / Cloudinary se mili image URL
-    const imageUrl = req.file ? req.file.path : '';
+    let imageUrl = '';
+
+    if (req.file) {
+      const fileInput = req.file.buffer || req.file.path;
+      const cloudResponse = await uploadOnCloudinary(fileInput, 'products');
+      if (cloudResponse) {
+        imageUrl = cloudResponse.url;
+      }
+    }
 
     const newProduct = new Product({
       title,
@@ -74,6 +98,7 @@ export const addProduct = async (req, res) => {
       colors: Array.isArray(colors) ? colors : colors ? colors.split(',').map((c) => c.trim()) : [],
       image: imageUrl,
       images: imageUrl ? [imageUrl] : [],
+      user: req.user._id,
     });
 
     const savedProduct = await newProduct.save();
@@ -83,7 +108,6 @@ export const addProduct = async (req, res) => {
   }
 };
 
-// Delete Product
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -96,5 +120,44 @@ export const deleteProduct = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: 'Error deleting product', error: error.message });
+  }
+};
+
+export const addProductReview = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (!rating || Number(rating) < 1 || Number(rating) > 5) {
+      return res.status(400).json({ message: 'Please provide a valid rating between 1 and 5' });
+    }
+
+    if (!product.reviews) {
+      product.reviews = [];
+    }
+
+    const review = {
+      user: req.user._id,
+      name: req.user.name || 'Verified Buyer',
+      rating: Number(rating),
+      comment: comment || '',
+      createdAt: new Date()
+    };
+
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    
+    const totalRating = product.reviews.reduce((acc, item) => acc + item.rating, 0);
+    product.rating = totalRating / product.reviews.length;
+
+    await product.save();
+
+    res.status(201).json({ message: 'Review Added Successfully', product });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error submitting review', error: error.message });
   }
 };

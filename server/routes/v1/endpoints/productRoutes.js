@@ -6,11 +6,12 @@ import {
   addProduct,
   deleteProduct,
   addProductReview,
-} from '../../controllers/productController.js';
-import upload from '../../middleware/upload.js';
-import { authMiddleware } from '../../middleware/authMiddleware.js';
+} from '../../../controllers/productController.js';
+import upload from '../../../middleware/upload.js';
+import { authMiddleware } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
+
 
 router.get('/', getProducts);
 router.get('/category/:categoryName', getProductsByCategory);

@@ -7,6 +7,7 @@ import {
   Store,
   Sparkles,
   LogOut,
+  ShoppingCart, // Added ShoppingCart Icon
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -17,6 +18,13 @@ import SearchBar from "./SearchBar";
 export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+
+  // Cart Count fetch kar rahe hain Redux state se (agar 'cart' slice standard name se saved hai)
+  const cartItems = useSelector((state) => state.cart?.items || []);
+  const totalCartCount = cartItems.reduce(
+    (sum, item) => sum + (item.quantity || 1),
+    0
+  );
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -58,6 +66,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-6 shrink-0 relative">
+          {/* User Account Dropdown Menu */}
           <div
             className="relative py-2"
             onMouseEnter={() => setIsUserMenuOpen(true)}
@@ -159,6 +168,22 @@ export default function Navbar() {
               </div>
             )}
           </div>
+
+          {/* Cart Icon Link Section */}
+          <Link
+            to="/cart"
+            className="relative flex items-center gap-2 text-slate-200 hover:text-orange-400 transition py-2"
+          >
+            <div className="relative">
+              <ShoppingCart size={22} className="text-orange-400" />
+              {totalCartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                  {totalCartCount > 9 ? "9+" : totalCartCount}
+                </span>
+              )}
+            </div>
+            <span className="hidden md:inline text-sm font-semibold">Cart</span>
+          </Link>
         </div>
       </div>
     </nav>

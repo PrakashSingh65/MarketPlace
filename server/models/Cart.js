@@ -24,7 +24,6 @@ const cartSchema = new mongoose.Schema({
   items: [cartItemSchema]
 }, { timestamps: true });
 
-// Index for fast user cart lookup
-cartSchema.index({ userId: 1 });
+
 
 export default mongoose.model('Cart', cartSchema);

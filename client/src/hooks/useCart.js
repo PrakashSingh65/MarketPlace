@@ -1,44 +1,90 @@
-import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setItemCount, incrementItemCount, decrementItemCount, resetItemCount } from '../redux/slice/cartSlice';
+import {
+  useGetCart,
+  useAddToCart,
+  useUpdateCartItem,
+  useRemoveFromCart,
+  useClearCart,
+} from '../api/cartApi';
 
-const CART_KEY = 'marketplace-cart';
-
-const readCart = () => {
-  try {
-    const storedCart = localStorage.getItem(CART_KEY);
-    return storedCart ? JSON.parse(storedCart) : [];
-  } catch {
-    return [];
-  }
+// Normalize a cart item from server response to a flat object the UI expects
+const normalizeItem = (item) => {
+  const product = item.productId || {};
+  return {
+    _id: product._id || item.productId,
+    cartItemId: item._id,               // The cart sub-document _id for update/remove
+    title: product.title || product.name || 'Unknown Product',
+    name: product.name || product.title || 'Unknown Product',
+    price: product.price ?? 0,
+    pricePerMeter: product.pricePerMeter ?? product.price ?? 0,
+    image: product.image || (product.images && product.images[0]) || '',
+    imageUrl: product.image || '',
+    category: product.category || '',
+    quantity: item.quantity || 1,
+    stock: product.stock ?? 0,
+  };
 };
 
 export default function useCart() {
-  const [cart, setCart] = useState(readCart);
+  const dispatch = useDispatch();
 
-  const updateCart = (nextCart) => {
-    setCart(nextCart);
-    localStorage.setItem(CART_KEY, JSON.stringify(nextCart));
-  };
+  const { data: cartData, isLoading } = useGetCart();
+  const addMutation = useAddToCart();
+  const updateMutation = useUpdateCartItem();
+  const removeMutation = useRemoveFromCart();
+  const clearMutation = useClearCart();
 
-  const addToCart = (product) => {
+  // Derive flat cart array from server response
+  const rawItems = cartData?.cart?.items || [];
+  const cart = rawItems.map(normalizeItem);
+
+  // Keep Redux itemCount badge in sync
+  if (cart.length !== undefined) {
+    dispatch(setItemCount(cart.reduce((sum, i) => sum + (i.quantity || 1), 0)));
+  }
+
+  const addToCart = async (product) => {
     const productId = product._id || product.id;
-    const existingItem = cart.find((item) => (item._id || item.id) === productId);
-    const nextCart = existingItem
-      ? cart.map((item) => (item._id || item.id) === productId
-        ? { ...item, quantity: (item.quantity || 1) + 1 }
-        : item)
-      : [...cart, { ...product, quantity: 1 }];
-    updateCart(nextCart);
+    if (!productId) return;
+    dispatch(incrementItemCount());
+    try {
+      await addMutation.mutateAsync({ productId, quantity: 1 });
+    } catch {
+      dispatch(decrementItemCount());
+    }
   };
 
-  const updateQuantity = (productId, quantity) => {
-    updateCart(cart.map((item) => (item._id || item.id) === productId ? { ...item, quantity } : item));
+  const updateQuantity = async (productId, quantity) => {
+    if (!productId || quantity < 1) return;
+    await updateMutation.mutateAsync({ productId, quantity });
   };
 
-  const removeFromCart = (productId) => {
-    updateCart(cart.filter((item) => (item._id || item.id) !== productId));
+  const removeFromCart = async (productId) => {
+    if (!productId) return;
+    dispatch(decrementItemCount());
+    try {
+      await removeMutation.mutateAsync(productId);
+    } catch {
+      dispatch(incrementItemCount());
+    }
   };
 
-  const clearCart = () => updateCart([]);
+  const clearCart = async () => {
+    dispatch(resetItemCount());
+    await clearMutation.mutateAsync();
+  };
 
-  return { cart, addToCart, updateQuantity, removeFromCart, clearCart };
+  return {
+    cart,
+    isLoading,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    isAdding: addMutation.isPending,
+    isRemoving: removeMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isClearing: clearMutation.isPending,
+  };
 }

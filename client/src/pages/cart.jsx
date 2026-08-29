@@ -5,7 +5,7 @@ import useCart from '../hooks/useCart';
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { cart, updateQuantity, removeFromCart } = useCart();
+  const { cart, isLoading, updateQuantity, removeFromCart } = useCart();
 
   // Har product ke liye platform fee setup (Default ₹19 per item quantity)
   const PER_ITEM_PLATFORM_FEE = 19;
@@ -33,6 +33,14 @@ export default function Cart() {
 
   const totalDiscount = totalMRP - subtotal;
   const grandTotal = subtotal + totalPlatformFee;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[80vh] bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+        <p className="text-slate-400 text-sm">Loading your cart...</p>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -80,7 +88,7 @@ export default function Cart() {
           <div className="lg:col-span-8 space-y-4">
             
             {cart.map((item, index) => {
-              const itemId = item._id || item.id || index;
+              const itemId = item._id || index;          // product _id — used in API routes
               const currentQty = item.quantity || 1;
               const originalPrice = item.originalPrice || Math.round(Number(item.price) * 1.5);
               const discountPercent = Math.round(((originalPrice - item.price) / originalPrice) * 100);

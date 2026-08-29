@@ -16,11 +16,15 @@ const cartItemSchema = new mongoose.Schema({
 
 const cartSchema = new mongoose.Schema({
   userId: {
-    type: String, // String rakha hai taaki ObjectIds aur Dummy IDs dono handle ho ske
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
-    unique: true
+    unique: true   // One cart per user
   },
   items: [cartItemSchema]
 }, { timestamps: true });
+
+// Index for fast user cart lookup
+cartSchema.index({ userId: 1 });
 
 export default mongoose.model('Cart', cartSchema);

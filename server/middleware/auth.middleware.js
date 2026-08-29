@@ -28,3 +28,11 @@ export const authMiddleware = async (req, res, next) => {
         res.status(500).json({ message: error.message || "Internal Server Error" });
     }
 }
+
+export const isSupplier = (req, res, next) => {
+    if (req.user && (req.user.role === 'SUPPLIER' || req.user.role === 'supplier')) {
+        next();
+    } else {
+        res.status(403).json({ message: "Access denied. Only suppliers can perform this action." });
+    }
+};

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, ShoppingBag, Sparkles, ShieldCheck, Truck, Store, Tag } from 'lucide-react';
+import { useGetProducts } from '../api/productApi';
 
 function InlineHeroSection() {
   return (
@@ -142,27 +143,8 @@ function InlineHeroSection() {
 }
 
 export default function Home({ searchQuery = '', selectedCategory = 'For You' }) {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/api/products`);
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(Array.isArray(data) ? data : data.products || []);
-        }
-      } catch (error) {
-        console.error("Products fetch error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, [apiUrl]);
+  const { data, isLoading: loading } = useGetProducts();
+  const products = Array.isArray(data) ? data : data?.products || [];
 
   const filteredProducts = products.filter((product) => {
     const titleMatch = (product.title || product.name || '')

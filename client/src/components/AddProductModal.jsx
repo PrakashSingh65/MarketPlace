@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useAddProduct } from '../api/productApi';
 
 const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
-  const [loading, setLoading] = useState(false);
+  const addProductMutation = useAddProduct();
   const [formData, setFormData] = useState({
     title: '',
     price: '',
@@ -21,22 +21,15 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      // Backend API URL match karein
-      const response = await axios.post('http://localhost:5000/api/products', formData);
-      
-      if (response.data.success) {
-        alert('Product successfully add ho gaya!');
-        if (onProductAdded) onProductAdded(response.data.product);
-        onClose();
-      }
+      const response = await addProductMutation.mutateAsync(formData);
+      alert('Product successfully add ho gaya!');
+      if (onProductAdded) onProductAdded(response?.product || response);
+      onClose();
     } catch (error) {
       console.error('Error adding product:', error);
       alert(error.response?.data?.message || 'Product add karne me issue aaya');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -122,8 +115,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
             <button type="button" onClick={onClose} style={styles.cancelBtn}>
               Cancel
             </button>
-            <button type="submit" disabled={loading} style={styles.submitBtn}>
-              {loading ? 'Adding...' : 'Add Product'}
+            <button type="submit" disabled={addProductMutation.isPending} style={styles.submitBtn}>
+              {addProductMutation.isPending ? 'Adding...' : 'Add Product'}
             </button>
           </div>
         </form>

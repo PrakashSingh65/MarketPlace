@@ -1,68 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import React, { useState } from 'react';
+import { useGetProductById, useAddProductReview } from '../api/productApi';
 
 const ProductDetailsWithReviews = ({ productId }) => {
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: product, isLoading: loading } = useGetProductById(productId);
+  const addReviewMutation = useAddProductReview();
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-
-  // Fetch product and its reviews
-  const fetchProductDetails = async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get(`${API_BASE_URL}/products/${productId}`);
-      setProduct(data);
-    } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to fetch details' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (productId) fetchProductDetails();
-  }, [productId]);
 
   // Submit new review
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    setSubmitLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
-      const token = localStorage.getItem('userInfo') 
-        ? JSON.parse(localStorage.getItem('userInfo')).token 
-        : null;
-
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      await axios.post(
-        `${API_BASE_URL}/products/${productId}/reviews`,
-        { rating: Number(rating), comment },
-        config
-      );
+      await addReviewMutation.mutateAsync({
+        id: productId,
+        reviewData: { rating: Number(rating), comment }
+      });
 
       setMessage({ type: 'success', text: 'Review submitted successfully!' });
       setComment('');
       setRating(5);
-      fetchProductDetails(); // Refresh product reviews and updated rating
     } catch (err) {
       setMessage({ 
         type: 'error', 
         text: err.response?.data?.message || 'Failed to submit review. Please log in.' 
       });
-    } finally {
-      setSubmitLoading(false);
     }
   };
 
@@ -136,10 +101,10 @@ const ProductDetailsWithReviews = ({ productId }) => {
 
           <button
             type="submit"
-            disabled={submitLoading}
+            disabled={addReviewMutation.isPending}
             className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition"
           >
-            {submitLoading ? 'Submitting...' : 'Submit Review'}
+            {addReviewMutation.isPending ? 'Submitting...' : 'Submit Review'}
           </button>
         </form>
       </div>

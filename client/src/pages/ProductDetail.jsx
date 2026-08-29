@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { 
   ArrowLeft, ShoppingCart, ShieldCheck, Truck, Sparkles, 
   Package, Tag, Palette 
 } from 'lucide-react';
 import InquiryModal from '../components/InquiryModal';
 import useCart from '../hooks/useCart';
+import { useGetProductById } from '../api/productApi';
 
 
 export default function ProductDetail() {
@@ -14,43 +14,13 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const [product, setProduct] = useState(null);
+  const { data: product, isLoading: loading } = useGetProductById(id);
   const [selectedColor, setSelectedColor] = useState('');
-  const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Default color options
   const availableColors = ['#1E293B', '#2563EB', '#059669', '#DC2626', '#D97706'];
-
-  useEffect(() => {
-    // API Call to fetch product details
-    axios.get(`http://localhost:5000/api/products/${id}`)
-      .then(res => {
-        setProduct(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.warn("Backend fetch failed, using fallback data for testing:", err.message);
-        // Fallback Mock Data if API fails or offline
-        setProduct({
-          _id: id,
-          title: 'Premium Organic Cotton Fabric',
-          category: 'Cotton',
-          description: 'High-grade, breathable 100% organic combed cotton suitable for apparel, home textiles, and custom garments.',
-          price: 280,
-          stockAvailable: 12500,
-          specifications: {
-            GSM: '180-200 GSM',
-            Weave: 'Plain Weave',
-            Width: '58 Inches (147 cm)',
-            Composition: '100% Organic Cotton'
-          },
-          image: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800'
-        });
-        setLoading(false);
-      });
-  }, [id]);
 
   const handleAddToCart = () => {
     if (addToCart && product) {

@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useGetProducts, useAddProduct, useDeleteProduct } from '../api/productApi';
+import { toggleAddProductModal } from '../redux/slice/productSlice';
 
 const CATEGORY_MAP = {
   fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
@@ -17,9 +20,14 @@ const CATEGORY_MAP = {
 };
 
 export default function SupplierDashboard() {
-  const [products, setProducts] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const dispatch = useDispatch();
+  const isModalOpen = useSelector((state) => state.productUI.isAddProductModalOpen);
+
+  const { data: fetchedData } = useGetProducts();
+  const products = Array.isArray(fetchedData) ? fetchedData : fetchedData?.products || [];
+
+  const addProductMutation = useAddProduct();
+  const deleteProductMutation = useDeleteProduct();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -33,29 +41,6 @@ export default function SupplierDashboard() {
   const [colors, setColors] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${apiUrl}/api/products`, {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error("Fetch products error:", err);
-    }
-  };
 
   const handleCategoryChange = (e) => {
     const selectedCat = e.target.value;
@@ -87,17 +72,21 @@ export default function SupplierDashboard() {
     setImagePreview(null);
   };
 
+  const handleOpenModal = () => {
+    dispatch(toggleAddProductModal());
+  };
+
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    if (isModalOpen) {
+      dispatch(toggleAddProductModal());
+    }
     resetForm();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description);
@@ -120,30 +109,13 @@ export default function SupplierDashboard() {
       }
       if (imageFile) formData.append('image', imageFile);
 
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      await addProductMutation.mutateAsync(formData);
 
-      const res = await fetch(`${apiUrl}/api/products`, {
-        method: 'POST',
-        headers: headers,
-        body: formData,
-      });
-
-      if (res.ok) {
-        alert('Product uploaded successfully!');
-        handleCloseModal();
-        fetchProducts();
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        alert(errData.message || 'Upload failed. Please check input values.');
-      }
+      alert('Product uploaded successfully!');
+      handleCloseModal();
     } catch (err) {
       console.error("Submit error:", err);
-      alert('Something went wrong. Please try again.');
-    } finally {
-      setSubmitting(false);
+      alert(err.response?.data?.message || 'Something went wrong. Please try again.');
     }
   };
 
@@ -152,21 +124,10 @@ export default function SupplierDashboard() {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${apiUrl}/api/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      });
-
-      if (res.ok) {
-        setProducts((prev) => prev.filter((item) => (item._id || item.id) !== id));
-      } else {
-        alert("Failed to delete product");
-      }
+      await deleteProductMutation.mutateAsync(id);
     } catch (err) {
       console.error("Delete error:", err);
+      alert("Failed to delete product");
     }
   };
 
@@ -184,7 +145,7 @@ export default function SupplierDashboard() {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenModal}
           style={{
             backgroundColor: '#4f46e5',
             color: '#fff',
@@ -408,19 +369,19 @@ export default function SupplierDashboard() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={addProductMutation.isPending}
                 style={{
-                  backgroundColor: submitting ? '#312e81' : '#4f46e5',
+                  backgroundColor: addProductMutation.isPending ? '#312e81' : '#4f46e5',
                   color: '#fff',
                   padding: '10px',
                   borderRadius: '8px',
                   border: 'none',
                   fontWeight: 'bold',
-                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  cursor: addProductMutation.isPending ? 'not-allowed' : 'pointer',
                   marginTop: '8px'
                 }}
               >
-                {submitting ? 'Uploading Product...' : 'Upload Product'}
+                {addProductMutation.isPending ? 'Uploading Product...' : 'Upload Product'}
               </button>
             </form>
           </div>

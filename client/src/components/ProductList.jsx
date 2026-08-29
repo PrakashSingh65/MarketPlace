@@ -1,38 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import ProductCard from './ProductCard';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import { useGetProducts } from '../api/productApi';
+import { setCategoryFilter, setSearchKeyword } from '../redux/slice/productSlice';
 
 const ProductList = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const dispatch = useDispatch();
+  const { category, keyword: search } = useSelector((state) => state.productUI.filters);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const { data } = await axios.get(`${API_BASE_URL}/products`, {
-        params: { search, category },
-      });
-      setProducts(data.products || data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading: loading, isError, error: fetchError } = useGetProducts({
+    ...(search && { search }),
+    ...(category && { category }),
+  });
 
-  useEffect(() => {
-    fetchProducts();
-  }, [category]);
+  const products = Array.isArray(data) ? data : data?.products || [];
+  const error = isError ? (fetchError?.response?.data?.message || 'Failed to load products') : '';
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchProducts();
   };
 
   return (
@@ -44,7 +29,7 @@ const ProductList = () => {
             type="text"
             placeholder="Search fabric, composition, or GSM..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => dispatch(setSearchKeyword(e.target.value))}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
@@ -57,7 +42,7 @@ const ProductList = () => {
 
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
           className="w-full md:w-1/4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Categories</option>

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Product from '../models/Product.js';
 import { uploadOnCloudinary } from '../config/cloudinary.js';
 
@@ -81,6 +82,10 @@ export const addProduct = async (req, res) => {
       if (cloudResponse) {
         imageUrl = cloudResponse.url;
       }
+      // Clean up local temp file created by diskStorage
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
     }
 
     const newProduct = new Product({
@@ -98,7 +103,7 @@ export const addProduct = async (req, res) => {
       colors: Array.isArray(colors) ? colors : colors ? colors.split(',').map((c) => c.trim()) : [],
       image: imageUrl,
       images: imageUrl ? [imageUrl] : [],
-      user: req.user._id,
+      supplier: req.user._id,
     });
 
     const savedProduct = await newProduct.save();
@@ -113,6 +118,9 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
+      if (product.supplier.toString() !== req.user._id.toString() && product.user?.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to delete this product' });
+      }
       await product.deleteOne();
       res.status(200).json({ message: 'Product removed successfully' });
     } else {

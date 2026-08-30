@@ -11,7 +11,7 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: false // Guest checkout support ke liye optional
+      required: false
     },
     items: [
       {
@@ -32,14 +32,26 @@ const orderSchema = new mongoose.Schema(
     shippingAddress: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
-      street: { type: String, required: true },
+      street: { type: String },
+      address: { type: String },
       city: { type: String, required: true },
       pincode: { type: String, required: true }
     },
     paymentMethod: {
       type: String,
-      enum: ['COD', 'Cash On Delivery', 'Online', 'UPI', 'Card'],
-      default: 'COD'
+      enum: ['COD', 'Cash On Delivery', 'cod', 'Online', 'Razorpay', 'UPI', 'upi', 'Card'],
+      default: 'Razorpay'
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
+      default: 'Pending'
+    },
+    razorpayOrderId: {
+      type: String
+    },
+    razorpayPaymentId: {
+      type: String
     },
     pricing: {
       listingPrice: { type: Number, default: 0 },

@@ -1,9 +1,11 @@
 import express from 'express';
-import { createOrder, verifyPayment } from '../../../controllers/paymentController.js';
+import { getRazorpayKey, createRazorpayOrder, verifyPayment } from '../../../controllers/paymentController.js';
+import { optionalAuthMiddleware } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/create-order', createOrder);
-router.post('/verify-payment', verifyPayment);
+router.get('/key', getRazorpayKey);
+router.post('/create-order', optionalAuthMiddleware, createRazorpayOrder);
+router.post('/verify-payment', optionalAuthMiddleware, verifyPayment);
 
 export default router;

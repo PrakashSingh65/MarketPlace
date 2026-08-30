@@ -1,75 +1,171 @@
-import { useState } from 'react';
-import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, ExternalLink, Edit2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, Edit2, ExternalLink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import useCart from '../hooks/useCart';
+import { useCreateOrder } from '../api/orderApi';
+import { useCreateRazorpayOrder, useVerifyPayment, useGetRazorpayKey } from '../api/paymentApi';
+import { openRazorpayCheckout } from '../utils/razorpay';
+import { setShippingAddress as setReduxShippingAddress } from '../redux/slice/orderSlice';
+import { setPaymentMethod as setReduxPaymentMethod, setPaymentStatus } from '../redux/slice/paymentSlice';
 
 export default function Checkout({ onOrderPlaced }) {
+  const dispatch = useDispatch();
   const { cart, clearCart } = useCart();
+  const user = useSelector((state) => state.auth?.user);
+  const reduxShipping = useSelector((state) => state.order?.shippingAddress);
+  const reduxPaymentMethod = useSelector((state) => state.payment?.paymentMethod);
 
   const [shippingAddress, setShippingAddress] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    city: '',
-    pincode: ''
+    name: reduxShipping?.name || user?.name || '',
+    phone: reduxShipping?.phone || user?.phone || '',
+    address: reduxShipping?.address || reduxShipping?.street || '',
+    city: reduxShipping?.city || '',
+    pincode: reduxShipping?.pincode || ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [paymentMethod, setPaymentMethod] = useState(reduxPaymentMethod || 'Razorpay');
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState(null);
 
-  // Real UPI ID state (Yahan apni actual UPI ID daalein, e.g., 9876543210@ybl ya prakash@okicici)
   const [upiId, setUpiId] = useState('prakash@upi');
-  const merchantName = 'Prakash Singh';
+  const merchantName = 'OnestoLabs B2B';
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const { data: keyData } = useGetRazorpayKey();
+  const createOrderMutation = useCreateOrder();
+  const createRazorpayOrderMutation = useCreateRazorpayOrder();
+  const verifyPaymentMutation = useVerifyPayment();
+
+  useEffect(() => {
+    dispatch(setReduxShippingAddress(shippingAddress));
+  }, [shippingAddress, dispatch]);
+
+  useEffect(() => {
+    dispatch(setReduxPaymentMethod(paymentMethod));
+  }, [paymentMethod, dispatch]);
 
   const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * (item.quantity || 1)), 0);
   const tax = Math.round(subtotal * 0.05);
   const shippingFee = subtotal > 2000 ? 0 : 150;
   const grandTotal = subtotal + tax + shippingFee;
 
-  // Dynamic UPI URL Generation
   const upiPayUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(merchantName)}&am=${grandTotal}&cu=INR`;
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (!cart || cart.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+
     setLoading(true);
 
+    const orderPayload = {
+      items: cart.map(item => ({
+        product: item._id || item.id,
+        title: item.title || item.name,
+        quantity: item.quantity || 1,
+        price: item.price,
+        image: item.image || item.images?.[0]
+      })),
+      shippingAddress: {
+        name: shippingAddress.name,
+        phone: shippingAddress.phone,
+        street: shippingAddress.address,
+        address: shippingAddress.address,
+        city: shippingAddress.city,
+        pincode: shippingAddress.pincode
+      },
+      userId: user?._id,
+      totalAmount: grandTotal
+    };
+
     try {
-      const orderPayload = {
-        items: cart.map(item => ({
-          product: item._id || item.id,
-          title: item.title || item.name,
-          quantity: item.quantity || 1,
-          price: item.price
-        })),
-        shippingAddress,
-        paymentMethod,
-        paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Paid',
-        totalAmount: grandTotal,
-        status: 'Pending'
-      };
+      if (paymentMethod === 'cod' || paymentMethod === 'COD') {
+        // Cash on Delivery Order Flow
+        const response = await createOrderMutation.mutateAsync({
+          ...orderPayload,
+          paymentMethod: 'COD',
+          paymentStatus: 'Pending'
+        });
 
-      const res = await fetch(`${apiUrl}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload)
-      });
-
-      if (res.ok) {
-        setOrderSuccess(true);
-        if (clearCart) clearCart();
-        if (onOrderPlaced) onOrderPlaced();
+        if (response.success || response.order) {
+          setPlacedOrder(response.order);
+          setOrderSuccess(true);
+          dispatch(setPaymentStatus('Pending'));
+          if (clearCart) clearCart();
+          if (onOrderPlaced) onOrderPlaced();
+        }
       } else {
-        setOrderSuccess(true);
-        if (clearCart) clearCart();
+        // Online Payment Flow via Razorpay
+        const razorpayOrderRes = await createRazorpayOrderMutation.mutateAsync({
+          amount: grandTotal,
+          currency: 'INR',
+          orderId: `OD_${Date.now()}`
+        });
+
+        if (!razorpayOrderRes || (!razorpayOrderRes.orderId && !razorpayOrderRes.id)) {
+          throw new Error(razorpayOrderRes?.message || 'Failed to create Razorpay payment order');
+        }
+
+        const razorpayKeyId = razorpayOrderRes.keyId || keyData?.keyId;
+        const rzpOrderId = razorpayOrderRes.orderId || razorpayOrderRes.id;
+
+        const razorpayOpened = await openRazorpayCheckout({
+          keyId: razorpayKeyId,
+          orderId: rzpOrderId,
+          amount: razorpayOrderRes.amount || Math.round(grandTotal * 100),
+          currency: razorpayOrderRes.currency || 'INR',
+          name: 'MarketPlace B2B',
+          description: `Order Payment (Total: ₹${grandTotal})`,
+          prefill: {
+            name: shippingAddress.name,
+            email: user?.email || '',
+            phone: shippingAddress.phone
+          },
+          onSuccess: async (rzpResponse) => {
+            try {
+              // 1. Verify Payment Signature on backend
+              const verifyRes = await verifyPaymentMutation.mutateAsync({
+                razorpay_order_id: rzpResponse.razorpay_order_id,
+                razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                razorpay_signature: rzpResponse.razorpay_signature
+              });
+
+              // 2. Create Order on backend with Paid status
+              const orderRes = await createOrderMutation.mutateAsync({
+                ...orderPayload,
+                paymentMethod: 'Razorpay',
+                paymentStatus: 'Paid',
+                razorpayOrderId: rzpResponse.razorpay_order_id,
+                razorpayPaymentId: rzpResponse.razorpay_payment_id
+              });
+
+              setPlacedOrder(orderRes.order || verifyRes.order);
+              setOrderSuccess(true);
+              dispatch(setPaymentStatus('Paid'));
+              if (clearCart) clearCart();
+              if (onOrderPlaced) onOrderPlaced();
+            } catch (err) {
+              console.error('Payment verification/order error:', err);
+              alert(err.message || 'Payment verification failed');
+            } finally {
+              setLoading(false);
+            }
+          },
+          onDismiss: () => {
+            setLoading(false);
+          }
+        });
+
+        if (!razorpayOpened) {
+          setLoading(false);
+        }
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setOrderSuccess(true);
-      if (clearCart) clearCart();
-    } finally {
+      alert(err.message || 'An error occurred during checkout.');
       setLoading(false);
     }
   };
@@ -83,13 +179,16 @@ export default function Checkout({ onOrderPlaced }) {
           </div>
           <h2 className="text-xl font-black text-white">Order Placed Successfully!</h2>
           <p className="text-xs text-slate-400">
-            Payment verified via <span className="text-indigo-400 uppercase font-bold">{paymentMethod}</span>. Your order has been registered.
+            Order ID: <span className="text-indigo-400 font-mono font-bold">{placedOrder?.orderId || placedOrder?._id || 'Registered'}</span>
+          </p>
+          <p className="text-xs text-slate-400">
+            Payment Method: <span className="text-emerald-400 uppercase font-bold">{paymentMethod}</span>
           </p>
           <button
-            onClick={() => window.location.href = '/buyer-dashboard'}
+            onClick={() => window.location.href = placedOrder?._id ? `/order/${placedOrder._id}` : '/my-orders'}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition cursor-pointer"
           >
-            Track Order Status
+            Track Order Details
           </button>
         </div>
       </div>
@@ -176,20 +275,20 @@ export default function Checkout({ onOrderPlaced }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 
-                {/* UPI Option */}
+                {/* Razorpay / UPI Option */}
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('upi')}
+                  onClick={() => setPaymentMethod('Razorpay')}
                   className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 cursor-pointer ${
-                    paymentMethod === 'upi'
+                    paymentMethod === 'Razorpay'
                       ? 'bg-indigo-950/40 border-indigo-500 text-white ring-2 ring-indigo-500/20'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
-                  <QrCode size={20} className={paymentMethod === 'upi' ? 'text-indigo-400' : 'text-slate-500'} />
+                  <QrCode size={20} className={paymentMethod === 'Razorpay' ? 'text-indigo-400' : 'text-slate-500'} />
                   <div>
-                    <p className="text-xs font-bold text-white">UPI / GPay / PhonePe</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Instant Auto-Verify</p>
+                    <p className="text-xs font-bold text-white">Razorpay Online</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">UPI, GPay, Cards, NetBanking</p>
                   </div>
                 </button>
 
@@ -206,7 +305,7 @@ export default function Checkout({ onOrderPlaced }) {
                   <CreditCard size={20} className={paymentMethod === 'card' ? 'text-indigo-400' : 'text-slate-500'} />
                   <div>
                     <p className="text-xs font-bold text-white">Credit / Debit Card</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Visa, Mastercard, RuPay</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Via Razorpay Gateway</p>
                   </div>
                 </button>
 
@@ -215,12 +314,12 @@ export default function Checkout({ onOrderPlaced }) {
                   type="button"
                   onClick={() => setPaymentMethod('cod')}
                   className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-3 cursor-pointer ${
-                    paymentMethod === 'cod'
+                    paymentMethod === 'cod' || paymentMethod === 'COD'
                       ? 'bg-indigo-950/40 border-indigo-500 text-white ring-2 ring-indigo-500/20'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
-                  <Banknote size={20} className={paymentMethod === 'cod' ? 'text-indigo-400' : 'text-slate-500'} />
+                  <Banknote size={20} className={paymentMethod === 'cod' || paymentMethod === 'COD' ? 'text-indigo-400' : 'text-slate-500'} />
                   <div>
                     <p className="text-xs font-bold text-white">Cash on Delivery</p>
                     <p className="text-[10px] text-slate-500 mt-0.5">Pay upon shipment</p>
@@ -229,60 +328,38 @@ export default function Checkout({ onOrderPlaced }) {
 
               </div>
 
-              {/* Dynamic Scan & Pay Section */}
-              {paymentMethod === 'upi' && (
+              {/* UPI Direct QR Code Simulation */}
+              {paymentMethod === 'Razorpay' && (
                 <div className="bg-slate-950 border border-slate-800 p-5 rounded-2xl text-xs space-y-4">
-                  
-                  {/* Enter Personal UPI ID */}
                   <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-2">
                     <Edit2 size={14} className="text-indigo-400 shrink-0" />
                     <input
                       type="text"
                       value={upiId}
                       onChange={(e) => setUpiId(e.target.value)}
-                      placeholder="Enter Actual Bank UPI ID (e.g. 9876543210@ybl)"
+                      placeholder="Enter Bank UPI ID (e.g. 9876543210@ybl)"
                       className="w-full bg-transparent text-white text-xs focus:outline-none font-mono"
                     />
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-5">
                     <div className="bg-white p-2.5 rounded-2xl border border-slate-700 shadow-lg shrink-0">
-                      <QRCodeSVG 
-                        value={upiPayUrl} 
-                        size={120} 
-                      />
+                      <QRCodeSVG value={upiPayUrl} size={120} />
                     </div>
 
                     <div className="space-y-2 text-center sm:text-left">
-                      <p className="text-indigo-400 font-bold">Scan & Pay via UPI App</p>
+                      <p className="text-indigo-400 font-bold">Instant Online Checkout</p>
                       <p className="text-slate-200 text-[11px] font-semibold">
                         Payee Name: <span className="text-emerald-400">{merchantName}</span>
                       </p>
-                      <p className="text-slate-400 text-[11px]">
-                        UPI ID: <span className="text-white font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{upiId}</span>
+                      <p className="text-slate-500 text-[10px]">
+                        Click "Pay & Place Order" below to open the official Razorpay payment portal.
                       </p>
-                      <p className="text-slate-500 text-[10px]">GPay, PhonePe, Paytm ya BHIM app se scan karein.</p>
-                      
-                      <a
-                        href={upiPayUrl}
-                        className="inline-flex items-center gap-1.5 mt-1 bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-lg text-[11px] font-semibold hover:bg-indigo-600/50 transition"
-                      >
-                        <ExternalLink size={12} /> Pay via UPI App Direct
-                      </a>
                     </div>
                   </div>
                 </div>
               )}
 
-              {paymentMethod === 'card' && (
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2 text-xs">
-                  <input type="text" placeholder="Card Number (4000 1234 5678 9010)" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="MM/YY" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
-                    <input type="password" maxLength={3} placeholder="CVV" className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500" />
-                  </div>
-                </div>
-              )}
             </div>
 
           </div>
@@ -329,10 +406,10 @@ export default function Checkout({ onOrderPlaced }) {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || cart.length === 0}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition disabled:opacity-50 mt-2 cursor-pointer"
               >
-                {loading ? 'Processing Payment...' : `Pay & Place Order (₹${grandTotal})`}
+                {loading ? 'Processing Order...' : `Pay & Place Order (₹${grandTotal})`}
               </button>
             </div>
           </div>

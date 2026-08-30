@@ -4,135 +4,6 @@ TexMarket is a specialized B2B and B2C textile marketplace platform designed for
 
 ---
 
-## 🛠️ Tech Stack
-
-### Frontend (Client)
-* **Framework:** React 19 (Vite-powered, offering Fast Hot Module Replacement)
-* **Routing:** React Router DOM v7
-* **State Management:** Redux Toolkit (`@reduxjs/toolkit` & `react-redux`)
-* **Data Fetching & Cache Management:** TanStack React Query v5
-* **Styling:** Tailwind CSS v4 (using `@tailwindcss/vite` compiler integration)
-* **HTTP Client:** Axios
-* **Icons:** Lucide React
-* **Payments:** Razorpay Client Integration & simulated Scan & Pay scanner (`qrcode.react`)
-
-### Backend (Server)
-* **Runtime Environment:** Node.js
-* **Framework:** Express.js (v5.2.x)
-* **Database ODM:** Mongoose (MongoDB)
-* **Authentication:** JSON Web Tokens (JWT) with secure `HttpOnly` cookie parser
-* **File Uploads:** Multer with Cloudinary integration (`multer-storage-cloudinary`)
-* **Payment Processing:** Razorpay Node.js SDK
-* **Developer Tools & Logging:** Morgan (HTTP request logging), Nodemon (Live reload in development)
-
-### Deployment & Containerization
-* **Docker & Docker Compose:** Orchestrated multi-container environment separating the `frontend` and `backend` services.
-
-### 📊 Tech Stack Architecture Diagram
-```mermaid
-flowchart TB
-    %% Styling definitions
-    classDef frontend fill:#3b82f6,stroke:#1d4ed8,color:#fff,stroke-width:2px;
-    classDef backend fill:#10b981,stroke:#047857,color:#fff,stroke-width:2px;
-    classDef database fill:#f59e0b,stroke:#b45309,color:#fff,stroke-width:2px;
-    classDef devops fill:#8b5cf6,stroke:#6d28d9,color:#fff,stroke-width:2px;
-    classDef external fill:#ec4899,stroke:#be185d,color:#fff,stroke-width:2px;
-
-    subgraph ClientStack ["Frontend Tech Stack"]
-        React("React 19"):::frontend
-        Vite("Vite Build Tool"):::frontend
-        Tailwind("Tailwind CSS v4"):::frontend
-        Router("React Router v7"):::frontend
-        Redux("Redux Toolkit"):::frontend
-        Query("React Query v5"):::frontend
-        Axios("Axios HTTP"):::frontend
-        
-        React --> Tailwind
-        React --> Router
-        React --> Redux
-        React --> Query
-        Query --> Axios
-        Vite -.-> React
-    end
-
-    subgraph ServerStack ["Backend Tech Stack"]
-        Node("Node.js Runtime"):::backend
-        Express("Express.js v5"):::backend
-        JWT("JWT Authentication"):::backend
-        Multer("Multer Uploads"):::backend
-        
-        Node --> Express
-        Express --> JWT
-        Express --> Multer
-    end
-
-    subgraph DatabaseStack ["Database Stack"]
-        Mongoose("Mongoose ODM"):::database
-        MongoDB[("MongoDB Database")]:::database
-        
-        Mongoose --> MongoDB
-    end
-
-    subgraph DevOpsStack ["Infrastructure & DevOps"]
-        Docker("Docker Containers"):::devops
-        Compose("Docker Compose"):::devops
-        
-        Compose --> Docker
-    end
-
-    subgraph ExternalStack ["External Services"]
-        Cloudinary("Cloudinary Media Store"):::external
-        Razorpay("Razorpay Payment Gateway"):::external
-    end
-
-    %% Interactions
-    ClientStack <-->|"HTTP & Cookies"| ServerStack
-    ServerStack <-->|"Database Queries"| DatabaseStack
-    ServerStack <-->|"Upload Images"| Cloudinary
-    ServerStack <-->|"Process Payments"| Razorpay
-    DevOpsStack -.->|"Orchestrates Dev Env"| ClientStack
-    DevOpsStack -.->|"Orchestrates Dev Env"| ServerStack
-```
-
----
-
-## 📂 Folder Structure
-
-```text
-MarketPlace/
-├── client/                     # Frontend Application (Vite + React)
-│   ├── src/
-│   │   ├── api/                # Axios configuration and API endpoints integrations
-│   │   ├── assets/             # Global static assets (images, icons, etc.)
-│   │   ├── components/         # Shared & feature-based React components (AIAssistant, PanCard, navbar, etc.)
-│   │   ├── hooks/              # Custom React hooks (e.g., useCart)
-│   │   ├── pages/              # Main view/page components (Dashboards, Products, Login, Checkout)
-│   │   ├── redux/              # Redux slices (auth, cart, product, etc.) and store configuration
-│   │   ├── routes/             # Client routes mapping (AppRoutes.jsx)
-│   │   ├── utils/              # Utility configurations (Razorpay loaders)
-│   │   ├── App.jsx             # Main app entry layout
-│   │   └── main.jsx            # React root mounting file
-│   ├── Dockerfile              # Container configuration for client
-│   ├── package.json            # Frontend dependencies and dev scripts
-│   └── vite.config.js          # Vite configuration
-│
-├── server/                     # Backend Application (Node.js + Express)
-│   ├── config/                 # Cloudinary and MongoDB connection setups
-│   ├── controllers/            # Controller logic files (handling requests & responses)
-│   ├── middleware/             # Express middlewares (authentication, roles check, file upload)
-│   ├── models/                 # Mongoose schemas (User, Product, Cart, Order, Payment)
-│   ├── routes/                 # Express API routes (V1 versioned routes)
-│   ├── utils/              # Backend utilities (async handlers, token generators)
-│   ├── Dockerfile              # Container configuration for server
-│   ├── server.js               # Entry point of the Express server
-│   └── package.json            # Server dependencies and launch scripts
-│
-├── docker-compose.yml          # Multicontainer setup file for development
-└── README.md                   # Project documentation (this file)
-```
-
----
-
 ## 📊 System Architecture & Relationships
 
 ### 1. System Flow & Architecture
@@ -251,6 +122,141 @@ erDiagram
 ```
 
 ---
+
+
+# 📊 Tech Stack Architecture Diagram
+```mermaid
+flowchart TB
+    %% Styling definitions
+    classDef frontend fill:#3b82f6,stroke:#1d4ed8,color:#fff,stroke-width:2px;
+    classDef backend fill:#10b981,stroke:#047857,color:#fff,stroke-width:2px;
+    classDef database fill:#f59e0b,stroke:#b45309,color:#fff,stroke-width:2px;
+    classDef devops fill:#8b5cf6,stroke:#6d28d9,color:#fff,stroke-width:2px;
+    classDef external fill:#ec4899,stroke:#be185d,color:#fff,stroke-width:2px;
+
+    subgraph ClientStack ["Frontend Tech Stack"]
+        React("React 19"):::frontend
+        Vite("Vite Build Tool"):::frontend
+        Tailwind("Tailwind CSS v4"):::frontend
+        Router("React Router v7"):::frontend
+        Redux("Redux Toolkit"):::frontend
+        Query("React Query v5"):::frontend
+        Axios("Axios HTTP"):::frontend
+        
+        React --> Tailwind
+        React --> Router
+        React --> Redux
+        React --> Query
+        Query --> Axios
+        Vite -.-> React
+    end
+
+    subgraph ServerStack ["Backend Tech Stack"]
+        Node("Node.js Runtime"):::backend
+        Express("Express.js v5"):::backend
+        JWT("JWT Authentication"):::backend
+        Multer("Multer Uploads"):::backend
+        
+        Node --> Express
+        Express --> JWT
+        Express --> Multer
+    end
+
+    subgraph DatabaseStack ["Database Stack"]
+        Mongoose("Mongoose ODM"):::database
+        MongoDB[("MongoDB Database")]:::database
+        
+        Mongoose --> MongoDB
+    end
+
+    subgraph DevOpsStack ["Infrastructure & DevOps"]
+        Docker("Docker Containers"):::devops
+        Compose("Docker Compose"):::devops
+        
+        Compose --> Docker
+    end
+
+    subgraph ExternalStack ["External Services"]
+        Cloudinary("Cloudinary Media Store"):::external
+        Razorpay("Razorpay Payment Gateway"):::external
+    end
+
+    %% Interactions
+    ClientStack <-->|"HTTP & Cookies"| ServerStack
+    ServerStack <-->|"Database Queries"| DatabaseStack
+    ServerStack <-->|"Upload Images"| Cloudinary
+    ServerStack <-->|"Process Payments"| Razorpay
+    DevOpsStack -.->|"Orchestrates Dev Env"| ClientStack
+    DevOpsStack -.->|"Orchestrates Dev Env"| ServerStack
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend (Client)
+* **Framework:** React 19 (Vite-powered, offering Fast Hot Module Replacement)
+* **Routing:** React Router DOM v7
+* **State Management:** Redux Toolkit (`@reduxjs/toolkit` & `react-redux`)
+* **Data Fetching & Cache Management:** TanStack React Query v5
+* **Styling:** Tailwind CSS v4 (using `@tailwindcss/vite` compiler integration)
+* **HTTP Client:** Axios
+* **Icons:** Lucide React
+* **Payments:** Razorpay Client Integration & simulated Scan & Pay scanner (`qrcode.react`)
+
+### Backend (Server)
+* **Runtime Environment:** Node.js
+* **Framework:** Express.js (v5.2.x)
+* **Database ODM:** Mongoose (MongoDB)
+* **Authentication:** JSON Web Tokens (JWT) with secure `HttpOnly` cookie parser
+* **File Uploads:** Multer with Cloudinary integration (`multer-storage-cloudinary`)
+* **Payment Processing:** Razorpay Node.js SDK
+* **Developer Tools & Logging:** Morgan (HTTP request logging), Nodemon (Live reload in development)
+
+### Deployment & Containerization
+* **Docker & Docker Compose:** Orchestrated multi-container environment separating the `frontend` and `backend` services.
+
+---
+
+
+## 📂 Folder Structure
+
+```text
+MarketPlace/
+├── client/                     # Frontend Application (Vite + React)
+│   ├── src/
+│   │   ├── api/                # Axios configuration and API endpoints integrations
+│   │   ├── assets/             # Global static assets (images, icons, etc.)
+│   │   ├── components/         # Shared & feature-based React components (AIAssistant, PanCard, navbar, etc.)
+│   │   ├── hooks/              # Custom React hooks (e.g., useCart)
+│   │   ├── pages/              # Main view/page components (Dashboards, Products, Login, Checkout)
+│   │   ├── redux/              # Redux slices (auth, cart, product, etc.) and store configuration
+│   │   ├── routes/             # Client routes mapping (AppRoutes.jsx)
+│   │   ├── utils/              # Utility configurations (Razorpay loaders)
+│   │   ├── App.jsx             # Main app entry layout
+│   │   └── main.jsx            # React root mounting file
+│   ├── Dockerfile              # Container configuration for client
+│   ├── package.json            # Frontend dependencies and dev scripts
+│   └── vite.config.js          # Vite configuration
+│
+├── server/                     # Backend Application (Node.js + Express)
+│   ├── config/                 # Cloudinary and MongoDB connection setups
+│   ├── controllers/            # Controller logic files (handling requests & responses)
+│   ├── middleware/             # Express middlewares (authentication, roles check, file upload)
+│   ├── models/                 # Mongoose schemas (User, Product, Cart, Order, Payment)
+│   ├── routes/                 # Express API routes (V1 versioned routes)
+│   ├── utils/              # Backend utilities (async handlers, token generators)
+│   ├── Dockerfile              # Container configuration for server
+│   ├── server.js               # Entry point of the Express server
+│   └── package.json            # Server dependencies and launch scripts
+│
+├── docker-compose.yml          # Multicontainer setup file for development
+└── README.md                   # Project documentation (this file)
+```
+
+---
+
+
 
 ## 🚀 Getting Started
 

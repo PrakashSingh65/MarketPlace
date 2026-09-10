@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetProducts, useAddProduct, useDeleteProduct } from '../api/productApi';
 import { toggleAddProductModal } from '../redux/slice/productSlice';
@@ -21,9 +21,10 @@ const CATEGORY_MAP = {
 
 export default function SupplierDashboard() {
   const dispatch = useDispatch();
-  const isModalOpen = useSelector((state) => state.productUI.isAddProductModalOpen);
+  
+  const isModalOpen = useSelector((state) => state.productUI?.isAddProductModalOpen ?? false);
 
-  const { data: fetchedData } = useGetProducts();
+  const { data: fetchedData, isLoading, isError, refetch } = useGetProducts();
   const products = Array.isArray(fetchedData) ? fetchedData : fetchedData?.products || [];
 
   const addProductMutation = useAddProduct();
@@ -42,6 +43,14 @@ export default function SupplierDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   const handleCategoryChange = (e) => {
     const selectedCat = e.target.value;
     setCategory(selectedCat);
@@ -52,6 +61,7 @@ export default function SupplierDashboard() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
@@ -68,6 +78,7 @@ export default function SupplierDashboard() {
     setGsm('');
     setComposition('');
     setColors('');
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
     setImagePreview(null);
   };
@@ -100,6 +111,7 @@ export default function SupplierDashboard() {
 
       if (gsm) formData.append('gsm', gsm);
       if (composition) formData.append('composition', composition);
+      
       if (colors) {
         colors
           .split(',')
@@ -107,7 +119,10 @@ export default function SupplierDashboard() {
           .filter(Boolean)
           .forEach((c) => formData.append('colors', c));
       }
-      if (imageFile) formData.append('image', imageFile);
+
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
 
       await addProductMutation.mutateAsync(formData);
 
@@ -115,11 +130,10 @@ export default function SupplierDashboard() {
       handleCloseModal();
     } catch (err) {
       console.error("Submit error:", err);
-      alert(err.response?.data?.message || 'Something went wrong. Please try again.');
+      alert(err.response?.data?.message || err?.data?.message || 'Failed to connect to backend server');
     }
   };
 
-  // Product Delete Functionality
   const handleDeleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
@@ -127,7 +141,7 @@ export default function SupplierDashboard() {
       await deleteProductMutation.mutateAsync(id);
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to delete product");
+      alert(err.response?.data?.message || "Failed to delete product");
     }
   };
 
@@ -137,7 +151,6 @@ export default function SupplierDashboard() {
   return (
     <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
 
-      {/* Header Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
@@ -160,22 +173,39 @@ export default function SupplierDashboard() {
         </button>
       </div>
 
-      {/* Active Products Catalog */}
       <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
-        <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>Active Products ({products.length})</h3>
+        <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>
+          Active Products ({products.length})
+        </h3>
 
-        {products.length === 0 ? (
+        {isLoading && (
+          <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
+            Loading catalog products...
+          </p>
+        )}
+
+        {isError && (
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '16px', textAlign: 'center' }}>
+            <p style={{ fontSize: '13px' }}>Backend connection failed.</p>
+            <button onClick={() => refetch()} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', marginTop: '8px', fontSize: '11px' }}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !isError && products.length === 0 && (
           <p style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', padding: '20px' }}>
             No products added yet. Click "+ Add New Product" button above.
           </p>
-        ) : (
+        )}
+
+        {!isLoading && products.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {products.map((p) => {
               const productId = p._id || p.id;
               return (
                 <div key={productId} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b', position: 'relative' }}>
                   
-                  {/* Delete Icon */}
                   <button
                     onClick={() => handleDeleteProduct(productId)}
                     title="Delete Product"
@@ -197,15 +227,21 @@ export default function SupplierDashboard() {
                   </button>
 
                   <img
-                    src={(p.images && p.images[0]) || p.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="14">No Image</text></svg>'}
-                    alt={p.title}
+                    src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150?text=No+Image'}
+                    alt={p.title || 'Product Image'}
                     style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px' }}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/150?text=Image+Error';
+                    }}
                   />
-                  <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.title || 'Untitled Product'}
+                  </p>
                   
                   <div style={{ display: 'flex', gap: '4px', margin: '4px 0', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
-                      {p.category}
+                      {p.category || 'General'}
                     </span>
                     {p.subCategory && (
                       <span style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px' }}>
@@ -216,9 +252,9 @@ export default function SupplierDashboard() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                     <p style={{ color: '#818cf8', fontSize: '13px', fontWeight: 'bold' }}>
-                      ₹{p.pricePerMeter ?? p.price}
+                      ₹{p.pricePerMeter ?? p.price ?? 0}
                     </p>
-                    {p.stock && (
+                    {p.stock !== undefined && (
                       <span style={{ fontSize: '10px', color: '#64748b' }}>Stock: {p.stock}</span>
                     )}
                   </div>
@@ -229,7 +265,6 @@ export default function SupplierDashboard() {
         )}
       </div>
 
-      {/* Upload Modal */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',
@@ -369,19 +404,19 @@ export default function SupplierDashboard() {
 
               <button
                 type="submit"
-                disabled={addProductMutation.isPending}
+                disabled={addProductMutation?.isPending || addProductMutation?.isLoading}
                 style={{
-                  backgroundColor: addProductMutation.isPending ? '#312e81' : '#4f46e5',
+                  backgroundColor: (addProductMutation?.isPending || addProductMutation?.isLoading) ? '#312e81' : '#4f46e5',
                   color: '#fff',
                   padding: '10px',
                   borderRadius: '8px',
                   border: 'none',
                   fontWeight: 'bold',
-                  cursor: addProductMutation.isPending ? 'not-allowed' : 'pointer',
+                  cursor: (addProductMutation?.isPending || addProductMutation?.isLoading) ? 'not-allowed' : 'pointer',
                   marginTop: '8px'
                 }}
               >
-                {addProductMutation.isPending ? 'Uploading Product...' : 'Upload Product'}
+                {(addProductMutation?.isPending || addProductMutation?.isLoading) ? 'Uploading Product...' : 'Upload Product'}
               </button>
             </form>
           </div>

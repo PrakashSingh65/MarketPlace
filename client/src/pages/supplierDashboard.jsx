@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
 import { useGetProducts, useAddProduct, useDeleteProduct } from '../api/productApi';
 import { toggleAddProductModal } from '../redux/slice/productSlice';
 
 const CATEGORY_MAP = {
+  cotton: ["Combed Cotton", "Poplin", "Cambric", "Slub Cotton", "Organic Cotton"],
+  denim: ["Indigo Twill", "Ring Spun Denim", "Chambray", "Stretch Denim"],
+  silk: ["Mulberry Silk", "Crepe Silk", "Banarasi Brocade", "Raw Silk"],
+  linen: ["European Flax", "Organic Slub", "Cotton Linen Blend"],
+  knits: ["French Terry", "Single Jersey", "Rib Knit", "Interlock"],
+  polyester: ["Microfiber", "Recycled Poly", "Poly-Spandex"],
   fashion: ["Men's Wear", "Women's Wear", "Kids Wear", "Footwear"],
   mobiles: ["iPhone", "Vivo", "OPPO", "POCO", "Redmi", "Samsung", "realme", "Nothing", "Google", "Motorola"],
   electronics: ["Laptops", "Headphones", "Smartwatches", "Monitors"],
@@ -32,8 +39,8 @@ export default function SupplierDashboard() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('fashion');
-  const [subCategory, setSubCategory] = useState(CATEGORY_MAP['fashion'][0] || '');
+  const [category, setCategory] = useState('cotton');
+  const [subCategory, setSubCategory] = useState(CATEGORY_MAP['cotton'][0] || '');
   const [price, setPrice] = useState('');
   const [moq, setMoq] = useState('50');
   const [stock, setStock] = useState('50');
@@ -70,8 +77,8 @@ export default function SupplierDashboard() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setCategory('fashion');
-    setSubCategory(CATEGORY_MAP['fashion'][0] || '');
+    setCategory('cotton');
+    setSubCategory(CATEGORY_MAP['cotton'][0] || '');
     setPrice('');
     setMoq('50');
     setStock('50');
@@ -97,17 +104,29 @@ export default function SupplierDashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) {
+      toast.error('Please enter a product title');
+      return;
+    }
+
+    const cleanPrice = Number(price);
+    if (isNaN(cleanPrice) || cleanPrice <= 0) {
+      toast.error('Please enter a valid price per meter');
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('category', category);
-      formData.append('subCategory', subCategory);
-      formData.append('price', price);
-      formData.append('pricePerMeter', price);
-      formData.append('moq', moq);
-      formData.append('stock', stock);
-      formData.append('stockMeters', stock);
+      formData.append('title', cleanTitle);
+      formData.append('description', (description || '').trim());
+      formData.append('category', category || 'cotton');
+      formData.append('subCategory', subCategory || '');
+      formData.append('price', cleanPrice);
+      formData.append('pricePerMeter', cleanPrice);
+      formData.append('moq', Number(moq) || 50);
+      formData.append('stock', Number(stock) || 50);
+      formData.append('stockMeters', Number(stock) || 50);
 
       if (gsm) formData.append('gsm', gsm);
       if (composition) formData.append('composition', composition);
@@ -126,11 +145,13 @@ export default function SupplierDashboard() {
 
       await addProductMutation.mutateAsync(formData);
 
-      alert('Product uploaded successfully!');
+      toast.success('Product uploaded successfully!');
       handleCloseModal();
     } catch (err) {
       console.error("Submit error:", err);
-      alert(err.response?.data?.message || err?.data?.message || 'Failed to connect to backend server');
+      const msg = err.response?.data?.message || err?.message || 'Failed to upload product';
+      toast.error(msg);
+      alert(msg);
     }
   };
 
@@ -139,9 +160,12 @@ export default function SupplierDashboard() {
 
     try {
       await deleteProductMutation.mutateAsync(id);
+      toast.success("Product deleted successfully");
     } catch (err) {
       console.error("Delete error:", err);
-      alert(err.response?.data?.message || "Failed to delete product");
+      const msg = err.response?.data?.message || err?.message || "Failed to delete product";
+      toast.error(msg);
+      alert(msg);
     }
   };
 

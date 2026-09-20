@@ -45,7 +45,12 @@ app.use("/api", routes);
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error("Global Server Error:", err);
-  res.status(err.status || 500).json({
+  const isClientError =
+    err.name === "MulterError" ||
+    err.name === "ValidationError" ||
+    (err.message && (err.message.includes("Images only") || err.message.includes("Upload error")));
+  const statusCode = err.status || (isClientError ? 400 : 500);
+  res.status(statusCode).json({
     success: false,
     message: err.message || "Internal Server Error",
   });

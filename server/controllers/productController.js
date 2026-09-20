@@ -80,6 +80,7 @@ export const addProduct = async (req, res) => {
 
     const {
       title,
+      name,
       description,
       category,
       subCategory,
@@ -98,6 +99,7 @@ export const addProduct = async (req, res) => {
 
     let imageUrl = inputImageUrl || image || '';
 
+    // Handle file upload safely from memory buffer or disk
     if (req.file) {
       try {
         const fileInput = req.file.buffer || req.file.path;
@@ -106,12 +108,17 @@ export const addProduct = async (req, res) => {
           imageUrl = cloudResponse.url;
         }
       } catch (cloudErr) {
-        console.warn('Cloudinary upload fallback to local file:', cloudErr.message);
-        if (req.file.filename) {
+        console.warn('Cloudinary upload fallback to inline data URI:', cloudErr.message);
+        // If Cloudinary is offline or fails, create an inline base64 Data URI so the image is preserved without error
+        if (req.file.buffer) {
+          const mime = req.file.mimetype || 'image/jpeg';
+          imageUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+        } else if (req.file.filename) {
           imageUrl = `/uploads/${req.file.filename}`;
         }
       }
-      // Clean up local temp file created by diskStorage if needed
+
+      // Clean up temp disk file if diskStorage was somehow used
       if (req.file.path && fs.existsSync(req.file.path) && imageUrl.startsWith('http')) {
         try {
           fs.unlinkSync(req.file.path);
@@ -121,7 +128,7 @@ export const addProduct = async (req, res) => {
       }
     }
 
-    // Default fallback image if none provided
+    // Default curated fallback image if none provided
     if (!imageUrl) {
       imageUrl = 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800';
     }
@@ -134,29 +141,48 @@ export const addProduct = async (req, res) => {
       parsedColors = colors.split(',').map((c) => c.trim()).filter(Boolean);
     }
 
+    // Sanitize numeric fields to prevent NaN validation crashes
+    const parsedPrice = Number(price || pricePerMeter || 0);
+    const validPrice = !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : 100;
+
+    const parsedStock = Number(stock || stockMeters || 0);
+    const validStock = !isNaN(parsedStock) && parsedStock >= 0 ? parsedStock : 50;
+
+    const parsedMoq = Number(moq || 0);
+    const validMoq = !isNaN(parsedMoq) && parsedMoq >= 1 ? parsedMoq : 10;
+
+    const parsedGsm = gsm ? Number(gsm) : undefined;
+    const validGsm = parsedGsm && !isNaN(parsedGsm) && parsedGsm > 0 ? parsedGsm : undefined;
+
     const newProduct = new Product({
-      title: title || 'Premium Fabric',
-      description: description || '',
+      title: (title || name || 'Premium Fabric').trim(),
+      description: (description || '').trim(),
       category: category && category.trim() ? category.trim().toLowerCase() : 'cotton',
       subCategory: subCategory ? subCategory.trim() : '',
-      price: Number(price || pricePerMeter || 0),
-      pricePerMeter: Number(pricePerMeter || price || 0),
-      moq: Number(moq || 50),
-      stock: Number(stock || stockMeters || 50),
-      stockMeters: Number(stockMeters || stock || 50),
-      gsm: gsm ? Number(gsm) : undefined,
-      composition: composition || fabricType || '',
+      price: validPrice,
+      pricePerMeter: validPrice,
+      moq: validMoq,
+      stock: validStock,
+      stockMeters: validStock,
+      gsm: validGsm,
+      composition: (composition || fabricType || '').trim(),
       colors: parsedColors,
       image: imageUrl,
       images: imageUrl ? [imageUrl] : [],
       supplier: req.user._id,
+      rating: 0,
+      numReviews: 0,
     });
 
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error('Error adding product:', error);
-    res.status(400).json({ message: 'Error adding product', error: error.message });
+    res.status(400).json({ 
+      success: false, 
+      message: error.message || 'Error adding product',
+      error: error.message 
+    });
   }
 };
 

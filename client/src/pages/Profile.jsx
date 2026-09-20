@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosClient } from '../api/axiosClient';
@@ -7,24 +7,26 @@ import {
   Package, 
   User, 
   CreditCard, 
-  Folder, 
   Power, 
   ChevronRight, 
-  HelpCircle, 
   Truck,
   Trash2,
   Plus,
-  Loader2
+  Loader2,
+  Heart,
+  Sparkles,
+  MapPin
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Profile() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const API = axiosClient;
+  const reduxUser = useSelector((state) => state.auth?.user);
 
   const [activeTab, setActiveTab] = useState('profile');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -52,29 +54,83 @@ export default function Profile() {
     lastName: '',
     gender: 'Male',
     email: '',
-    phone: ''
+    phone: '',
+    businessName: ''
   });
 
- 
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axiosClient.get('/users/profile');
+      const userData = res.data?.user || res.data || reduxUser || {};
+      
+      const nameParts = (userData.name || '').split(' ');
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        gender: userData.gender || 'Male',
+        email: userData.email || '',
+        phone: userData.phone || '',
+        businessName: userData.businessName || ''
+      });
+
+      if (userData.addresses && Array.isArray(userData.addresses)) {
+        setAddresses(userData.addresses);
+      }
+    } catch (err) {
+      console.warn('Could not fetch server profile, using local state:', err);
+      if (reduxUser) {
+        const nameParts = (reduxUser.name || '').split(' ');
+        setFormData({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          gender: reduxUser.gender || 'Male',
+          email: reduxUser.email || '',
+          phone: reduxUser.phone || '',
+          businessName: reduxUser.businessName || ''
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [reduxUser]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const handleSaveProfile = async (type) => {
     try {
-      await API.put('/users/profile', formData);
+      setSaving(true);
+      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+      const payload = {
+        name: fullName,
+        email: formData.email,
+        phone: formData.phone,
+        gender: formData.gender,
+        businessName: formData.businessName
+      };
+
+      await axiosClient.put('/users/profile', payload);
       if (type === 'name') setIsEditingName(false);
       if (type === 'email') setIsEditingEmail(false);
       if (type === 'phone') setIsEditingPhone(false);
-      alert(`${type.toUpperCase()} updated successfully!`);
+      toast.success(`${type ? type.toUpperCase() : 'Profile'} updated successfully!`);
     } catch (err) {
       console.error("Profile update error:", err);
-      alert("Failed to update profile. Please try again.");
+      toast.error(err.response?.data?.message || "Failed to update profile.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await API.post('/users/addresses', addressData);
-      setAddresses([...addresses, data || addressData]);
+      setSaving(true);
+      const { data } = await axiosClient.post('/users/addresses', addressData);
+      const updatedAddrs = data?.addresses || [...addresses, data || addressData];
+      setAddresses(updatedAddrs);
       setShowAddressForm(false);
       setAddressData({
         name: '',
@@ -86,223 +142,232 @@ export default function Profile() {
         state: '',
         type: 'Home'
       });
-      alert('Address saved successfully!');
+      toast.success('Address saved successfully!');
     } catch (err) {
       console.error("Error saving address:", err);
-      setAddresses([...addresses, addressData]);
+      setAddresses(prev => [...prev, addressData]);
       setShowAddressForm(false);
+      toast.success('Address saved locally!');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteAddress = async (index, addressId) => {
     try {
       if (addressId) {
-        await API.delete(`/users/addresses/${addressId}`);
+        await axiosClient.delete(`/users/addresses/${addressId}`);
       }
-      setAddresses(addresses.filter((_, i) => i !== index));
+      setAddresses(prev => prev.filter((_, i) => i !== index));
+      toast.success('Address removed');
     } catch (err) {
       console.error("Error deleting address:", err);
-      setAddresses(addresses.filter((_, i) => i !== index));
+      setAddresses(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   const handleAddUpi = (e) => {
     e.preventDefault();
     if (!newUpi.includes('@')) {
-      alert('Please enter a valid UPI ID (e.g. name@upi)');
+      toast.error('Please enter a valid UPI ID (e.g. name@okhdfcbank)');
       return;
     }
     setUpiList([...upiList, newUpi]);
     setNewUpi('');
     setShowAddUpi(false);
+    toast.success('UPI ID saved!');
   };
 
   const handleDeleteUpi = (index) => {
     setUpiList(upiList.filter((_, i) => i !== index));
+    toast.success('UPI ID removed');
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await axiosClient.post('/auth/logout');
+    } catch (err) {
+      console.warn('Server logout error:', err);
+    } finally {
+      dispatch(logout());
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userInfo');
+      toast.success('Logged out successfully');
+      navigate('/login');
+    }
   };
 
   return (
-    <div className="bg-[#f1f3f6] min-h-screen text-slate-800 py-4 px-2 md:px-12">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4">
+    <div className="bg-slate-950 min-h-screen text-slate-100 py-8 px-4 md:px-12 font-sans">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
         
-        <div className="w-full md:w-1/4 flex flex-col gap-3">
+        {/* Sidebar */}
+        <div className="w-full md:w-1/4 flex flex-col gap-4">
           
-          <div className="bg-white p-4 rounded-sm shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl">
-              👦
+          {/* User Card */}
+          <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-xl">
+              {formData.firstName ? formData.firstName[0].toUpperCase() : 'U'}
             </div>
             <div>
-              <p className="text-xs text-gray-500">Hello,</p>
-              <h3 className="font-bold text-base text-gray-800 capitalize">
-                {formData.firstName} {formData.lastName}
+              <p className="text-[11px] text-slate-400">Welcome,</p>
+              <h3 className="font-extrabold text-base text-white capitalize">
+                {formData.firstName || 'Marketplace'} {formData.lastName || 'Member'}
               </h3>
+              <p className="text-[10px] text-indigo-400 font-medium">{formData.email || 'Verified Account'}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-sm shadow-sm">
+          {/* Navigation Options */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden divide-y divide-slate-800/60">
             
             <div 
-              onClick={() => navigate('/orders')}
-              className="flex justify-between items-center p-4 border-b border-gray-100 cursor-pointer hover:bg-slate-50 text-gray-700 font-semibold"
+              onClick={() => navigate('/my-orders')}
+              className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-800/50 text-slate-200 font-semibold transition"
             >
               <div className="flex items-center gap-3">
-                <Package size={18} className="text-blue-600" />
-                <span className="text-xs uppercase tracking-wide">MY ORDERS</span>
+                <Package size={18} className="text-indigo-400" />
+                <span className="text-xs uppercase tracking-wider">My Orders</span>
               </div>
-              <ChevronRight size={16} className="text-gray-400" />
+              <ChevronRight size={16} className="text-slate-500" />
             </div>
 
-            <div className="border-b border-gray-100">
-              <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
-                <User size={18} className="text-blue-600" />
-                <span className="text-xs uppercase tracking-wide">ACCOUNT SETTINGS</span>
+            <div>
+              <div className="p-4 flex items-center gap-3 text-slate-400 font-semibold">
+                <User size={18} className="text-indigo-400" />
+                <span className="text-xs uppercase tracking-wider">Account Settings</span>
               </div>
-              <div className="flex flex-col text-sm">
+              <div className="flex flex-col pb-2 text-xs">
                 <button 
                   onClick={() => setActiveTab('profile')}
-                  className={`text-left px-12 py-2.5 text-xs ${activeTab === 'profile' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
+                  className={`text-left px-12 py-2.5 transition ${activeTab === 'profile' ? 'bg-indigo-600/20 text-indigo-400 font-bold border-l-2 border-indigo-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
                 >
-                  Profile Information
+                  Personal Information
                 </button>
                 <button 
                   onClick={() => setActiveTab('addresses')}
-                  className={`text-left px-12 py-2.5 text-xs ${activeTab === 'addresses' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
+                  className={`text-left px-12 py-2.5 transition ${activeTab === 'addresses' ? 'bg-indigo-600/20 text-indigo-400 font-bold border-l-2 border-indigo-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
                 >
                   Manage Addresses
                 </button>
               </div>
             </div>
 
-            <div className="border-b border-gray-100">
-              <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
-                <CreditCard size={18} className="text-blue-600" />
-                <span className="text-xs uppercase tracking-wide">PAYMENTS</span>
+            <div>
+              <div className="p-4 flex items-center gap-3 text-slate-400 font-semibold">
+                <CreditCard size={18} className="text-indigo-400" />
+                <span className="text-xs uppercase tracking-wider">Payments</span>
               </div>
-              <div className="flex flex-col text-xs">
-                <button 
-                  onClick={() => setActiveTab('gift-cards')}
-                  className={`flex justify-between items-center px-12 py-2.5 text-left ${activeTab === 'gift-cards' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
-                >
-                  <span>Gift Cards</span>
-                  <span className="text-green-600 font-bold">₹0</span>
-                </button>
+              <div className="flex flex-col pb-2 text-xs">
                 <button 
                   onClick={() => setActiveTab('saved-upi')}
-                  className={`text-left px-12 py-2.5 ${activeTab === 'saved-upi' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
+                  className={`text-left px-12 py-2.5 transition ${activeTab === 'saved-upi' ? 'bg-indigo-600/20 text-indigo-400 font-bold border-l-2 border-indigo-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
                 >
-                  Saved UPI
+                  Saved UPI Handles
                 </button>
                 <button 
                   onClick={() => setActiveTab('saved-cards')}
-                  className={`text-left px-12 py-2.5 ${activeTab === 'saved-cards' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
+                  className={`text-left px-12 py-2.5 transition ${activeTab === 'saved-cards' ? 'bg-indigo-600/20 text-indigo-400 font-bold border-l-2 border-indigo-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'}`}
                 >
                   Saved Cards
                 </button>
               </div>
             </div>
 
-            <div className="border-b border-gray-100">
-              <div className="p-4 flex items-center gap-3 text-gray-700 font-semibold">
-                <Folder size={18} className="text-blue-600" />
-                <span className="text-xs uppercase tracking-wide">MY STUFF</span>
+            <div>
+              <div className="p-4 flex items-center gap-3 text-slate-400 font-semibold">
+                <Sparkles size={18} className="text-amber-400" />
+                <span className="text-xs uppercase tracking-wider">Rewards & Wishlist</span>
               </div>
-              <div className="flex flex-col text-xs">
-                <button 
-                  onClick={() => setActiveTab('coupons')}
-                  className={`text-left px-12 py-2.5 ${activeTab === 'coupons' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
-                >
-                  My Coupons
-                </button>
-                <button 
-                  onClick={() => setActiveTab('reviews')}
-                  className={`text-left px-12 py-2.5 ${activeTab === 'reviews' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
-                >
-                  My Reviews & Ratings
-                </button>
-                <button 
-                  onClick={() => setActiveTab('notifications')}
-                  className={`text-left px-12 py-2.5 ${activeTab === 'notifications' ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-600 hover:bg-slate-50'}`}
-                >
-                  All Notifications
-                </button>
+              <div className="flex flex-col pb-2 text-xs">
                 <button 
                   onClick={() => navigate('/wishlist')} 
-                  className="text-left px-12 py-2.5 text-gray-600 hover:bg-slate-50"
+                  className="flex items-center justify-between px-12 py-2.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/30 transition text-left"
                 >
-                  My Wishlist
+                  <span className="flex items-center gap-2"><Heart size={14} /> My Wishlist</span>
+                </button>
+                <button 
+                  onClick={() => navigate('/plus-zone')} 
+                  className="flex items-center justify-between px-12 py-2.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800/30 transition text-left"
+                >
+                  <span className="flex items-center gap-2"><Sparkles size={14} /> VIP Plus Zone</span>
                 </button>
               </div>
             </div>
 
             <div 
               onClick={handleLogout}
-              className="p-4 flex items-center gap-3 text-gray-700 font-semibold cursor-pointer hover:bg-slate-50"
+              className="p-4 flex items-center gap-3 text-rose-400 font-semibold cursor-pointer hover:bg-rose-950/20 transition"
             >
-              <Power size={18} className="text-blue-600" />
-              <span className="text-xs">Logout</span>
+              <Power size={18} />
+              <span className="text-xs uppercase tracking-wider">Logout</span>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-sm shadow-sm text-xs text-gray-500">
-            <p className="font-semibold text-gray-700 mb-2">Frequently Visited:</p>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-3xl shadow-xl text-xs text-slate-400">
+            <p className="font-bold text-slate-200 mb-2">Need Help?</p>
             <div className="flex gap-4">
-              <button onClick={() => navigate('/orders')} className="hover:underline flex items-center gap-1">
+              <button onClick={() => navigate('/my-orders')} className="hover:text-indigo-400 flex items-center gap-1">
                 <Truck size={12} /> Track Order
               </button>
-              <button onClick={() => navigate('/customer-care')} className="hover:underline flex items-center gap-1">
-                <HelpCircle size={12} /> Help Center
+              <button onClick={() => navigate('/customer-care')} className="hover:text-indigo-400 flex items-center gap-1">
+                Help Center
               </button>
             </div>
           </div>
         </div>
 
-        <div className="w-full md:w-3/4 bg-white p-6 md:p-8 rounded-sm shadow-sm flex flex-col gap-8 min-h-125">
+        {/* Content Area */}
+        <div className="w-full md:w-3/4 bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-xl flex flex-col gap-6 min-h-[500px]">
           
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 size={32} className="animate-spin text-blue-600" />
+            <div className="flex flex-col justify-center items-center h-64 gap-3">
+              <Loader2 size={36} className="animate-spin text-indigo-500" />
+              <p className="text-xs text-slate-400">Loading your profile details...</p>
             </div>
           ) : (
             <>
               {activeTab === 'profile' && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-6 mb-4">
-                      <h2 className="text-lg font-bold text-gray-800">Personal Information</h2>
+                <div className="space-y-6">
+                  
+                  {/* Personal Information */}
+                  <div className="border-b border-slate-800 pb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h2 className="text-base font-bold text-white">Personal Information</h2>
+                        <p className="text-xs text-slate-400">Your name and identity details</p>
+                      </div>
                       <button 
                         onClick={() => setIsEditingName(!isEditingName)}
-                        className="text-blue-600 font-bold text-xs hover:underline"
+                        className="text-indigo-400 font-bold text-xs hover:text-indigo-300"
                       >
                         {isEditingName ? 'Cancel' : 'Edit'}
                       </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-4 max-w-lg mb-4">
+                    <div className="flex flex-col sm:flex-row gap-4 max-w-lg mb-4">
                       <input 
                         type="text" 
+                        placeholder="First Name"
                         value={formData.firstName}
                         disabled={!isEditingName}
                         onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                        className="w-full border border-gray-300 p-2.5 rounded-sm bg-slate-50 text-gray-700 focus:outline-blue-500 disabled:opacity-70 text-sm"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-60 text-xs"
                       />
                       <input 
                         type="text" 
+                        placeholder="Last Name"
                         value={formData.lastName}
                         disabled={!isEditingName}
                         onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                        className="w-full border border-gray-300 p-2.5 rounded-sm bg-slate-50 text-gray-700 focus:outline-blue-500 disabled:opacity-70 text-sm"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-60 text-xs"
                       />
                     </div>
 
-                    <p className="text-xs font-semibold text-gray-600 mb-2">Your Gender</p>
-                    <div className="flex items-center gap-6 text-sm text-gray-700 mb-4">
+                    <p className="text-xs font-semibold text-slate-400 mb-2">Gender</p>
+                    <div className="flex items-center gap-6 text-xs text-slate-300 mb-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input 
                           type="radio" 
@@ -311,6 +376,7 @@ export default function Profile() {
                           checked={formData.gender === 'Male'}
                           onChange={(e) => setFormData({...formData, gender: e.target.value})}
                           disabled={!isEditingName}
+                          className="accent-indigo-500"
                         />
                         Male
                       </label>
@@ -322,6 +388,7 @@ export default function Profile() {
                           checked={formData.gender === 'Female'}
                           onChange={(e) => setFormData({...formData, gender: e.target.value})}
                           disabled={!isEditingName}
+                          className="accent-indigo-500"
                         />
                         Female
                       </label>
@@ -330,19 +397,24 @@ export default function Profile() {
                     {isEditingName && (
                       <button 
                         onClick={() => handleSaveProfile('name')}
-                        className="bg-blue-600 text-white text-xs font-bold px-6 py-2 rounded-sm shadow-sm hover:bg-blue-700"
+                        disabled={saving}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow transition"
                       >
-                        SAVE
+                        {saving ? 'Saving...' : 'Save Changes'}
                       </button>
                     )}
                   </div>
 
-                  <div>
-                    <div className="flex items-center gap-6 mb-3">
-                      <h2 className="text-lg font-bold text-gray-800">Email Address</h2>
+                  {/* Email */}
+                  <div className="border-b border-slate-800 pb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h2 className="text-base font-bold text-white">Email Address</h2>
+                        <p className="text-xs text-slate-400">Used for transactional notifications and invoices</p>
+                      </div>
                       <button 
                         onClick={() => setIsEditingEmail(!isEditingEmail)}
-                        className="text-blue-600 font-bold text-xs hover:underline"
+                        className="text-indigo-400 font-bold text-xs hover:text-indigo-300"
                       >
                         {isEditingEmail ? 'Cancel' : 'Edit'}
                       </button>
@@ -353,25 +425,30 @@ export default function Profile() {
                         value={formData.email}
                         disabled={!isEditingEmail}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full border border-gray-300 p-2.5 rounded-sm bg-slate-50 text-gray-700 focus:outline-blue-500 disabled:opacity-70 text-sm"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-60 text-xs"
                       />
                       {isEditingEmail && (
                         <button 
                           onClick={() => handleSaveProfile('email')}
-                          className="w-fit bg-blue-600 text-white text-xs font-bold px-6 py-2 rounded-sm shadow-sm hover:bg-blue-700"
+                          disabled={saving}
+                          className="w-fit bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow transition"
                         >
-                          SAVE
+                          {saving ? 'Saving...' : 'Save Email'}
                         </button>
                       )}
                     </div>
                   </div>
 
+                  {/* Phone */}
                   <div>
-                    <div className="flex items-center gap-6 mb-3">
-                      <h2 className="text-lg font-bold text-gray-800">Mobile Number</h2>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h2 className="text-base font-bold text-white">Mobile Number</h2>
+                        <p className="text-xs text-slate-400">Used for dispatch alerts and logistics communication</p>
+                      </div>
                       <button 
                         onClick={() => setIsEditingPhone(!isEditingPhone)}
-                        className="text-blue-600 font-bold text-xs hover:underline"
+                        className="text-indigo-400 font-bold text-xs hover:text-indigo-300"
                       >
                         {isEditingPhone ? 'Cancel' : 'Edit'}
                       </button>
@@ -382,87 +459,92 @@ export default function Profile() {
                         value={formData.phone}
                         disabled={!isEditingPhone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className="w-full border border-gray-300 p-2.5 rounded-sm bg-slate-50 text-gray-700 focus:outline-blue-500 disabled:opacity-70 text-sm"
+                        className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-60 text-xs"
                       />
                       {isEditingPhone && (
                         <button 
                           onClick={() => handleSaveProfile('phone')}
-                          className="w-fit bg-blue-600 text-white text-xs font-bold px-6 py-2 rounded-sm shadow-sm hover:bg-blue-700"
+                          disabled={saving}
+                          className="w-fit bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow transition"
                         >
-                          SAVE
+                          {saving ? 'Saving...' : 'Save Phone'}
                         </button>
                       )}
                     </div>
                   </div>
-                </>
+
+                </div>
               )}
 
               {activeTab === 'addresses' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold text-gray-800">Manage Addresses</h2>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Delivery Addresses</h2>
+                      <p className="text-xs text-slate-400">Manage destination addresses for fast bulk checkout</p>
+                    </div>
                     <button 
                       onClick={() => setShowAddressForm(!showAddressForm)}
-                      className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-sm shadow-sm hover:bg-blue-700"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5"
                     >
-                      {showAddressForm ? 'CANCEL' : '+ ADD A NEW ADDRESS'}
+                      <Plus size={14} /> {showAddressForm ? 'Cancel' : 'Add New Address'}
                     </button>
                   </div>
 
                   {showAddressForm && (
-                    <form onSubmit={handleAddressSubmit} className="bg-slate-50 p-4 border border-gray-200 mb-4 rounded-sm flex flex-col gap-3">
-                      <div className="flex gap-3">
+                    <form onSubmit={handleAddressSubmit} className="bg-slate-950 p-5 border border-slate-800 rounded-2xl flex flex-col gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input 
-                          type="text" placeholder="Name" required 
+                          type="text" placeholder="Contact Person / Facility Name" required 
                           value={addressData.name} 
                           onChange={(e) => setAddressData({...addressData, name: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                         <input 
                           type="text" placeholder="10-digit mobile number" required 
                           value={addressData.phone} 
                           onChange={(e) => setAddressData({...addressData, phone: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                       </div>
-                      <div className="flex gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input 
-                          type="text" placeholder="Pincode" required 
+                          type="text" placeholder="Pincode / Postal Code" required 
                           value={addressData.pincode} 
                           onChange={(e) => setAddressData({...addressData, pincode: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                         <input 
-                          type="text" placeholder="Locality" required 
+                          type="text" placeholder="Locality / Landmark" required 
                           value={addressData.locality} 
                           onChange={(e) => setAddressData({...addressData, locality: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                       </div>
                       <textarea 
-                        placeholder="Address (Area and Street)" required 
+                        placeholder="Street Address / Factory / Warehouse details" required 
                         value={addressData.address} 
                         onChange={(e) => setAddressData({...addressData, address: e.target.value})}
-                        className="p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500 h-20 resize-none"
+                        className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500 h-20 resize-none"
                       />
-                      <div className="flex gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input 
-                          type="text" placeholder="City/District/Town" required 
+                          type="text" placeholder="City" required 
                           value={addressData.city} 
                           onChange={(e) => setAddressData({...addressData, city: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                         <input 
                           type="text" placeholder="State" required 
                           value={addressData.state} 
                           onChange={(e) => setAddressData({...addressData, state: e.target.value})}
-                          className="w-1/2 p-2 border border-gray-300 text-xs rounded-sm focus:outline-blue-500" 
+                          className="p-3 bg-slate-900 border border-slate-800 text-xs rounded-xl text-white focus:outline-none focus:border-indigo-500" 
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-gray-500 font-semibold">Address Type</label>
-                        <div className="flex gap-6 text-xs text-gray-700">
+                      <div className="flex flex-col gap-1 mt-1">
+                        <label className="text-[11px] text-slate-400 font-semibold">Address Type</label>
+                        <div className="flex gap-6 text-xs text-slate-300">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input 
                               type="radio" 
@@ -470,8 +552,9 @@ export default function Profile() {
                               value="Home" 
                               checked={addressData.type === 'Home'}
                               onChange={(e) => setAddressData({...addressData, type: e.target.value})}
+                              className="accent-indigo-500"
                             />
-                            Home
+                            Office / Headquarter
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input 
@@ -480,37 +563,44 @@ export default function Profile() {
                               value="Work" 
                               checked={addressData.type === 'Work'}
                               onChange={(e) => setAddressData({...addressData, type: e.target.value})}
+                              className="accent-indigo-500"
                             />
-                            Work
+                            Warehouse / Factory
                           </label>
                         </div>
                       </div>
 
-                      <button type="submit" className="bg-blue-600 text-white font-bold text-xs py-2 px-6 w-fit rounded-sm hover:bg-blue-700">
-                        SAVE ADDRESS
+                      <button 
+                        type="submit" 
+                        disabled={saving}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-6 w-fit rounded-xl transition mt-2"
+                      >
+                        {saving ? 'Saving...' : 'Save Address'}
                       </button>
                     </form>
                   )}
 
                   {addresses.length === 0 ? (
-                    <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                      No addresses saved yet.
+                    <div className="p-8 border border-slate-800 rounded-2xl text-xs text-slate-500 text-center">
+                      <MapPin size={32} className="mx-auto mb-2 opacity-30 text-indigo-400" />
+                      No saved addresses yet. Click "+ Add New Address" above to register a shipping destination.
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-1 gap-3">
                       {addresses.map((item, index) => (
-                        <div key={item._id || index} className="p-4 border border-gray-200 rounded-sm bg-white text-xs text-gray-700 flex justify-between items-start">
-                          <div className="flex flex-col gap-1">
+                        <div key={item._id || index} className="p-4 border border-slate-800 rounded-2xl bg-slate-950 text-xs text-slate-300 flex justify-between items-start">
+                          <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm">{item.name}</span>
-                              <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded font-semibold uppercase">{item.type}</span>
-                              <span className="font-semibold ml-2">{item.phone}</span>
+                              <span className="font-bold text-sm text-white">{item.name}</span>
+                              <span className="bg-indigo-950 text-indigo-400 border border-indigo-800 text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase">{item.type}</span>
+                              <span className="text-slate-400 ml-2 font-mono">{item.phone}</span>
                             </div>
-                            <p>{item.address}, {item.locality}, {item.city}, {item.state} - <span className="font-bold">{item.pincode}</span></p>
+                            <p className="text-slate-400">{item.address}, {item.locality}, {item.city}, {item.state} - <strong className="text-slate-200">{item.pincode}</strong></p>
                           </div>
                           <button 
                             onClick={() => handleDeleteAddress(index, item._id)} 
-                            className="text-red-500 hover:text-red-700 p-1"
+                            className="text-slate-500 hover:text-rose-400 p-1.5 transition"
+                            title="Delete address"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -522,45 +612,48 @@ export default function Profile() {
               )}
 
               {activeTab === 'saved-upi' && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                    <h2 className="text-lg font-bold text-gray-800">Saved VPA / UPI</h2>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Saved VPA / UPI Handles</h2>
+                      <p className="text-xs text-slate-400">Quick-checkout UPI Virtual Payment Addresses</p>
+                    </div>
                     <button 
                       onClick={() => setShowAddUpi(!showAddUpi)}
-                      className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                      className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300"
                     >
                       <Plus size={14} /> {showAddUpi ? 'Cancel' : 'Add New VPA'}
                     </button>
                   </div>
 
                   {showAddUpi && (
-                    <form onSubmit={handleAddUpi} className="max-w-md p-4 bg-slate-50 border border-gray-200 rounded-sm flex flex-col gap-3">
-                      <label className="text-xs font-semibold text-gray-700">Enter VPA / UPI ID</label>
+                    <form onSubmit={handleAddUpi} className="max-w-md p-4 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col gap-3">
+                      <label className="text-xs font-semibold text-slate-300">Enter UPI ID</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. mobileNumber@upi / username@okaxis" 
+                        placeholder="e.g. business@okhdfcbank" 
                         value={newUpi}
                         onChange={(e) => setNewUpi(e.target.value)}
-                        className="border border-gray-300 p-2.5 rounded-sm text-xs focus:outline-blue-500"
+                        className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                         required
                       />
-                      <button type="submit" className="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-sm hover:bg-blue-700 w-fit">
-                        SAVE VPA
+                      <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded-xl w-fit transition">
+                        Save VPA
                       </button>
                     </form>
                   )}
 
                   {upiList.length === 0 ? (
-                    <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                      You have no saved UPI IDs.
+                    <div className="p-8 border border-slate-800 rounded-2xl text-xs text-slate-500 text-center">
+                      No saved UPI IDs. You can use any UPI app during checkout.
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {upiList.map((upi, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 border border-gray-200 rounded-sm text-xs text-gray-700 bg-slate-50">
-                          <span className="font-semibold">{upi}</span>
-                          <button onClick={() => handleDeleteUpi(index)} className="text-red-500 hover:text-red-700">
-                            <Trash2 size={16} />
+                        <div key={index} className="flex justify-between items-center p-3 border border-slate-800 rounded-xl text-xs text-slate-300 bg-slate-950">
+                          <span className="font-mono text-indigo-400">{upi}</span>
+                          <button onClick={() => handleDeleteUpi(index)} className="text-slate-500 hover:text-rose-400 transition">
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       ))}
@@ -569,48 +662,12 @@ export default function Profile() {
                 </div>
               )}
 
-              {activeTab === 'gift-cards' && (
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-4">Gift Cards</h2>
-                  <div className="p-6 border border-gray-200 rounded-sm bg-slate-50 text-sm text-gray-600 flex justify-between items-center">
-                    <span>Current Gift Card Balance:</span>
-                    <span className="text-lg font-bold text-green-600">₹0</span>
-                  </div>
-                </div>
-              )}
-
               {activeTab === 'saved-cards' && (
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-4">Saved Cards</h2>
-                  <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                    No saved debit or credit cards found.
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'coupons' && (
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-4">Available Coupons</h2>
-                  <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                    No active coupons available at the moment.
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'reviews' && (
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-4">My Reviews & Ratings</h2>
-                  <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                    You haven't submitted any product reviews yet.
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'notifications' && (
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-4">All Notifications</h2>
-                  <div className="p-4 border border-gray-200 rounded-sm text-xs text-gray-500">
-                    No new notifications.
+                <div className="space-y-4">
+                  <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3">Saved Cards</h2>
+                  <div className="p-8 border border-slate-800 rounded-2xl text-xs text-slate-500 text-center">
+                    <CreditCard size={32} className="mx-auto mb-2 opacity-30 text-indigo-400" />
+                    Cards are securely processed through Razorpay's PCI-DSS compliant vault during checkout.
                   </div>
                 </div>
               )}

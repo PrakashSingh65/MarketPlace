@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -10,6 +10,20 @@ export default function SearchBar() {
   useEffect(() => {
     setQuery(searchParams.get('q') || '');
   }, [searchParams]);
+
+  // Debounced navigation with replace: true so browser history isn't spammed
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed === (searchParams.get('q') || '')) return;
+
+    const handler = setTimeout(() => {
+      if (trimmed) {
+        navigate(`/search?q=${encodeURIComponent(trimmed)}`, { replace: true });
+      }
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [query, navigate, searchParams]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -33,11 +47,8 @@ export default function SearchBar() {
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            navigate(`/search?q=${encodeURIComponent(e.target.value)}`);
-          }}
-          placeholder="Search for Products, Brands and More..."
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search Cotton, Denim, 180 GSM, Silk..."
           className="w-full bg-purple-950/40 border border-purple-500/30 rounded-xl pl-10 pr-10 py-2 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-orange-500/80 focus:ring-1 focus:ring-orange-500/80 transition"
         />
 
@@ -45,7 +56,7 @@ export default function SearchBar() {
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 text-slate-400 hover:text-slate-200"
+            className="absolute right-3 text-slate-400 hover:text-slate-200 cursor-pointer"
           >
             <X size={16} />
           </button>

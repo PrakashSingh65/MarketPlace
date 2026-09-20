@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle2, Send, Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { axiosClient } from '../api/axiosClient';
 
 export default function InquiryModal({ isOpen, onClose, product }) {
   const { user } = useSelector((state) => state.auth);
@@ -15,7 +16,7 @@ export default function InquiryModal({ isOpen, onClose, product }) {
     if (isOpen) {
       setIsVisible(true);
       setQuantity(product?.moq || '');
-      setMessage(`I am interested in ordering ${product?.title}. Please provide more information about shipping and bulk pricing.`);
+      setMessage(`I am interested in ordering ${product?.title || 'this fabric'}. Please provide more information about shipping and bulk pricing.`);
       setSuccess(false);
       setError('');
     } else {
@@ -42,32 +43,19 @@ export default function InquiryModal({ isOpen, onClose, product }) {
     setError('');
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${baseUrl}/inquiries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          productId: product._id,
-          supplierId: product.supplierId?._id || product.supplierId,
-          quantity: Number(quantity),
-          message,
-        }),
+      await axiosClient.post('/inquiries', {
+        productId: product._id,
+        supplierId: product.supplier?._id || product.supplier,
+        quantity: Number(quantity),
+        message,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to send inquiry');
-      }
 
       setSuccess(true);
       setTimeout(() => {
         onClose();
       }, 2000);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Failed to send inquiry');
     } finally {
       setLoading(false);
     }

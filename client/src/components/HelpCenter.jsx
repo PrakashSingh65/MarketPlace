@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { HelpCircle, Phone, Mail, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function HelpCenter() {

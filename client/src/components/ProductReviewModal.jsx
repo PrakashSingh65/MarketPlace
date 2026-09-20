@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Star, X, MessageSquare, User } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { axiosClient } from '../api/axiosClient';
 
 export default function ProductReviewModal({ product, onClose, onReviewSubmitted }) {
   const [rating, setRating] = useState(5);
@@ -7,30 +9,24 @@ export default function ProductReviewModal({ product, onClose, onReviewSubmitted
   const [reviewerName, setReviewerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${apiUrl}/api/products/${product._id}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: reviewerName || 'Verified Buyer',
-          rating,
-          comment
-        })
+      await axiosClient.post(`/product/${product._id}/reviews`, {
+        name: reviewerName || 'Verified Buyer',
+        rating,
+        comment: comment.trim(),
       });
 
-      if (res.ok) {
-        onReviewSubmitted();
-        onClose();
-      }
+      toast.success('Review submitted successfully!');
+      if (onReviewSubmitted) onReviewSubmitted();
+      onClose();
     } catch (err) {
       console.error('Error submitting review:', err);
+      toast.error(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setSubmitting(false);
     }

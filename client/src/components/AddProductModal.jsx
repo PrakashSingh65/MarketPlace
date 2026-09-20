@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAddProduct } from '../api/productApi';
 
 const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {

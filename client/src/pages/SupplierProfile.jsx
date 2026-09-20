@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Building2, Phone, MapPin, Clock, FileText, Save, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Building2, Phone, MapPin, FileText, Save, CheckCircle2 } from 'lucide-react';
+import { axiosClient } from '../api/axiosClient';
 
 export default function SupplierProfile() {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   
-  // Get current logged-in user ID from localStorage
-  const userId = localStorage.getItem('userId') || '';
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
   const [profile, setProfile] = useState({
     businessName: '',
     phone: '',
@@ -21,33 +18,29 @@ export default function SupplierProfile() {
     description: ''
   });
 
-  useEffect(() => {
-    if (userId) {
-      fetchProfile();
-    }
-  }, [userId]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/users/profile/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setProfile({
-          businessName: data.businessName || '',
-          phone: data.phone || '',
-          street: data.address?.street || '',
-          city: data.address?.city || '',
-          state: data.address?.state || '',
-          pincode: data.address?.pincode || '',
-          operatingHours: data.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM',
-          gstin: data.gstin || '',
-          description: data.description || ''
-        });
-      }
+      const res = await axiosClient.get('/users/profile');
+      const data = res.data?.user || res.data || {};
+      setProfile({
+        businessName: data.businessName || '',
+        phone: data.phone || '',
+        street: data.address?.street || '',
+        city: data.address?.city || '',
+        state: data.address?.state || '',
+        pincode: data.address?.pincode || '',
+        operatingHours: data.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM',
+        gstin: data.gstin || '',
+        description: data.description || ''
+      });
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,16 +62,9 @@ export default function SupplierProfile() {
     };
 
     try {
-      const res = await fetch(`${apiUrl}/api/users/profile/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        setSuccessMsg('Profile updated successfully!');
-        setTimeout(() => setSuccessMsg(''), 4000);
-      }
+      await axiosClient.put('/users/profile', payload);
+      setSuccessMsg('Supplier profile updated successfully!');
+      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error('Error updating profile:', err);
     } finally {

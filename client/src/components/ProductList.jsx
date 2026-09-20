@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import ProductCard from './ProductCard';
 import { useGetProducts } from '../api/productApi';

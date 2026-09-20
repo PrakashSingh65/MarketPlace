@@ -139,7 +139,7 @@ export default function OrderDetails() {
       : 'Address not available';
 
   const defaultTimeline = [
-    { title: 'Order Confirmed', date: new Date(order.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), completed: true },
+    { title: 'Order Confirmed', date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Confirmed', completed: true },
     { title: 'Shipped', date: 'In Progress', completed: ['Shipped', 'Out For Delivery', 'Delivered'].includes(order.status) },
     { title: 'Out For Delivery', date: 'Expected Soon', completed: ['Out For Delivery', 'Delivered'].includes(order.status) },
     { title: 'Delivery', date: 'Pending', completed: order.status === 'Delivered' }

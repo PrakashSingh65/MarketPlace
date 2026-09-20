@@ -8,21 +8,48 @@ import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import routes from "./routes/index.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      // allow requests with no origin (like mobile apps, curl) or matching allowedOrigin
+      if (!origin || origin === allowedOrigin || origin === "http://localhost:5173" || origin === "http://localhost:5174") {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive in dev to avoid CORS blocking
+      }
+    },
     credentials: true,
   }),
 );
 app.use(morgan("dev"));
 
+// Static uploads serving
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api", routes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Global Server Error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`server is running on http://localhost:${PORT}`);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   User,
   ChevronDown,
@@ -7,7 +7,9 @@ import {
   Store,
   Sparkles,
   LogOut,
-  ShoppingCart, // Added ShoppingCart Icon
+  ShoppingCart,
+  Layers,
+  Bot,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -15,49 +17,94 @@ import { useSignOut } from "../api/authApi";
 import { logout } from "../redux/slice/authSlice";
 import SearchBar from "./SearchBar";
 
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
 export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  // Cart Count fetch kar rahe hain Redux state se (agar 'cart' slice standard name se saved hai)
+  // Cart Count from Redux state: itemCount or items array length
+  const cartItemCount = useSelector((state) => state.cart?.itemCount ?? 0);
   const cartItems = useSelector((state) => state.cart?.items || []);
-  const totalCartCount = cartItems.reduce(
+  const totalCartCount = cartItemCount > 0 ? cartItemCount : cartItems.reduce(
     (sum, item) => sum + (item.quantity || 1),
     0
   );
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { mutateAsync: signOut } = useSignOut();
 
   const handleLogout = async () => {
     try {
       await signOut();
-      dispatch(logout());
-      setIsUserMenuOpen(false);
-      navigate("/login");
     } catch (err) {
-      console.error("Logout Error:", err);
+      console.warn("Logout error:", err);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userInfo");
       dispatch(logout());
+      queryClient.setQueryData(["user"], null);
+      queryClient.removeQueries({ queryKey: ["user"] });
       setIsUserMenuOpen(false);
+      toast.success("Logged out successfully");
       navigate("/login");
     }
   };
 
   const closeMenu = () => setIsUserMenuOpen(false);
 
+  const handleUserClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    } else {
+      setIsUserMenuOpen((prev) => !prev);
+    }
+  };
+
   return (
-    <nav className="relative z-50 bg-[#0f0c1b] border-b border-purple-900/40 text-slate-200">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 w-full px-4 py-3">
+    <nav className="relative z-50 bg-[#0a0718] border-b border-purple-900/50 text-slate-200 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4 w-full px-3 sm:px-6 py-3">
         <div className="flex items-center gap-3 shrink-0">
           <Link
             to="/"
-            className="bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 font-black italic text-xl px-3 py-1 rounded-lg flex items-center gap-1 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+            className="bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400 text-slate-950 font-black italic text-xl sm:text-2xl px-3 py-1 rounded-xl flex items-center gap-1 shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:scale-105 transition"
           >
             <span>LeloBhai</span>
           </Link>
-          <div className="hidden sm:flex items-center bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-semibold text-purple-300 cursor-pointer transition">
-            <span>✈️ Travel</span>
+          <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold">
+            <Link
+              to="/marketplace"
+              className="bg-purple-950/60 hover:bg-purple-900/70 border border-purple-500/30 px-3 py-1.5 rounded-full text-purple-300 hover:text-white transition flex items-center gap-1"
+            >
+              <span>Marketplace</span>
+            </Link>
+            <Link
+              to="/categories"
+              className="bg-purple-950/60 hover:bg-purple-900/70 border border-purple-500/30 px-3 py-1.5 rounded-full text-purple-300 hover:text-white transition flex items-center gap-1"
+            >
+              <Layers size={13} className="text-amber-400" />
+              <span>Categories</span>
+            </Link>
+            <Link
+              to="/plus-zone"
+              className="bg-gradient-to-r from-purple-900/40 to-orange-950/40 hover:border-orange-500/50 border border-purple-500/30 px-3 py-1.5 rounded-full text-amber-300 transition flex items-center gap-1"
+            >
+              <Sparkles size={13} className="text-orange-400" />
+              <span>Plus Zone</span>
+            </Link>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-ai-assistant'))}
+              className="bg-gradient-to-r from-orange-500/20 to-purple-600/20 hover:from-orange-500/30 hover:to-purple-600/30 border border-orange-500/40 hover:border-orange-400 px-3 py-1.5 rounded-full text-orange-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Ask AI Assistant anything about fabrics and platform"
+            >
+              <Bot size={13} className="text-orange-400 animate-pulse" />
+              <span>Ask AI</span>
+            </button>
           </div>
         </div>
 
@@ -72,7 +119,10 @@ export default function Navbar() {
             onMouseEnter={() => setIsUserMenuOpen(true)}
             onMouseLeave={() => setIsUserMenuOpen(false)}
           >
-            <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 hover:text-orange-400 cursor-pointer">
+            <button 
+              onClick={handleUserClick}
+              className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 hover:text-orange-400 cursor-pointer"
+            >
               <User size={18} className="text-orange-400" />
               <span>{isAuthenticated ? user?.name || "Account" : "Login"}</span>
               <ChevronDown

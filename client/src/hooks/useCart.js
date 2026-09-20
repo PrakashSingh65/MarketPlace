@@ -1,5 +1,7 @@
+import { useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
-import { setItemCount, incrementItemCount, decrementItemCount, resetItemCount } from '../redux/slice/cartSlice';
+import toast from 'react-hot-toast';
+import { setCartItems, incrementItemCount, decrementItemCount, resetItemCount } from '../redux/slice/cartSlice';
 import {
   useGetCart,
   useAddToCart,
@@ -36,22 +38,38 @@ export default function useCart() {
   const clearMutation = useClearCart();
 
   // Derive flat cart array from server response
-  const rawItems = cartData?.cart?.items || [];
-  const cart = rawItems.map(normalizeItem);
+  const cart = useMemo(() => {
+    const rawItems = cartData?.cart?.items || [];
+    return rawItems.map(normalizeItem);
+  }, [cartData]);
 
-  // Keep Redux itemCount badge in sync
-  if (cart.length !== undefined) {
-    dispatch(setItemCount(cart.reduce((sum, i) => sum + (i.quantity || 1), 0)));
-  }
+  // Keep Redux state and badge in sync safely inside useEffect
+  useEffect(() => {
+    if (cart) {
+      dispatch(setCartItems(cart));
+    }
+  }, [cart, dispatch]);
 
   const addToCart = async (product) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) {
+      toast.error('Please sign in to add fabrics to your cart');
+      return;
+    }
+
     const productId = product._id || product.id;
-    if (!productId) return;
+    if (!productId || String(productId).startsWith('sample-')) {
+      toast('Catalog preview fabric cannot be added to cart', { icon: 'ℹ️' });
+      return;
+    }
+
     dispatch(incrementItemCount());
     try {
       await addMutation.mutateAsync({ productId, quantity: 1 });
-    } catch {
+      toast.success('Added to cart!');
+    } catch (err) {
       dispatch(decrementItemCount());
+      toast.error(err.response?.data?.message || 'Failed to add item to cart');
     }
   };
 

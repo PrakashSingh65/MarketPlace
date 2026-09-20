@@ -12,11 +12,11 @@ export const fetchProductById = async (id) => {
 };
 
 export const createProduct = async (formData) => {
-  const response = await axiosClient.post("/product", formData, {
-    headers: {
-      "Content-Type": formData instanceof FormData ? "multipart/form-data" : "application/json",
-    },
-  });
+  const headers = {};
+  if (!(formData instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  const response = await axiosClient.post("/product", formData, { headers });
   return response.data;
 };
 

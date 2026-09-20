@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CreditCard, CheckCircle, Upload } from 'lucide-react';
 
 export default function PanCard() {

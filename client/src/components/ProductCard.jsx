@@ -1,4 +1,3 @@
-import React from 'react';
 
 const API_IMAGE_URL = 'http://localhost:5000';
 const FALLBACK_IMAGE = 'https://placehold.co/300x200?text=Fabric+Image';

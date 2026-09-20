@@ -1,4 +1,3 @@
-import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 
 // Auth Pages
@@ -13,6 +12,9 @@ import Marketplace from "@/pages/marketplace";
 import ProductDetail from "@/pages/ProductDetail";
 import Cart from "@/pages/cart";
 import Checkout from "@/pages/Checkout";
+import Wishlist from "@/pages/Wishlist";
+import PlusZone from "@/pages/PlusZone";
+import CategoriesPage from "@/pages/CategoriesPage";
 
 // Dashboards & Support
 import SupplierDashboard from "@/pages/supplierDashboard";
@@ -37,13 +39,17 @@ const router = createBrowserRouter([
       { path: "marketplace", element: <Marketplace /> },
       { path: "search", element: <Marketplace /> },
       { path: "products", element: <Marketplace /> },
+      { path: "categories", element: <CategoriesPage /> },
       { path: "product/:id", element: <ProductDetail /> },
       { path: "cart", element: <Cart /> },
       { path: "customer-care", element: <CustomerCare /> },
-      { path: "wishlist", element: <Marketplace /> },
+      { path: "wishlist", element: <Wishlist /> },
+      { path: "plus-zone", element: <PlusZone /> },
       { path: "orders", element: <BuyerDashboard /> },
+      { path: "my-orders", element: <BuyerDashboard /> },
       { path: "buyer-dashboard", element: <BuyerDashboard /> },
       { path: "supplier-dashboard", element: <SupplierDashboard /> },
+      { path: "order/:orderId", element: <OrderDetails /> },
       { path: "order-details", element: <OrderDetails /> },
       { path: "order-details/:orderId", element: <OrderDetails /> },
       { path: "checkout", element: <Checkout /> },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { QrCode, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function ScanPaySimulation({ amount = 499, onSuccess }) {

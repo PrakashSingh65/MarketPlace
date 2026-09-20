@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
 
@@ -16,6 +17,10 @@ export const addToCart = async (req, res) => {
     const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID format' });
     }
 
     // Verify product exists
@@ -45,6 +50,9 @@ export const addToCart = async (req, res) => {
     await cart.save();
 
     const populatedCart = await Cart.findOne({ userId }).populate('items.productId');
+    if (populatedCart) {
+      populatedCart.items = populatedCart.items.filter((item) => item.productId !== null);
+    }
 
     return res.status(200).json({
       success: true,
@@ -72,6 +80,9 @@ export const getCart = async (req, res) => {
       return res.status(200).json({ success: true, cart: { userId, items: [] } });
     }
 
+    // Filter out deleted products
+    cart.items = cart.items.filter((item) => item.productId !== null);
+
     return res.status(200).json({ success: true, cart });
   } catch (error) {
     console.error('GET CART ERROR:', error);
@@ -87,6 +98,10 @@ export const removeFromCart = async (req, res) => {
 
     if (!userId) {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID format' });
     }
 
     const cart = await Cart.findOne({ userId });
@@ -107,6 +122,9 @@ export const removeFromCart = async (req, res) => {
     await cart.save();
 
     const populatedCart = await Cart.findById(cart._id).populate('items.productId');
+    if (populatedCart) {
+      populatedCart.items = populatedCart.items.filter((item) => item.productId !== null);
+    }
 
     return res.status(200).json({
       success: true,
@@ -155,6 +173,10 @@ export const updateCartItem = async (req, res) => {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID format' });
+    }
+
     if (!quantity || Number(quantity) < 1) {
       return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
     }
@@ -177,6 +199,9 @@ export const updateCartItem = async (req, res) => {
     await cart.save();
 
     const populatedCart = await Cart.findById(cart._id).populate('items.productId');
+    if (populatedCart) {
+      populatedCart.items = populatedCart.items.filter((item) => item.productId !== null);
+    }
 
     return res.status(200).json({
       success: true,

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Package, CheckCircle2, Clock, Truck } from 'lucide-react';
+import { useState } from 'react';
+import { Search, CheckCircle2, Clock, Truck } from 'lucide-react';
 
 export default function TrackOrder() {
   const [orderId, setOrderId] = useState('');

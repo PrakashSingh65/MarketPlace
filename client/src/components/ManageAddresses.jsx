@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react'; // Ya aap normal text "+" use kar sakte hain
 
 export default function ManageAddresses() {

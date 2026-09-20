@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { useSignup } from "../api/authApi";
+import { setUser } from "../redux/slice/authSlice";
+import { useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -17,6 +21,9 @@ export default function Register() {
   const navigate = useNavigate();
   const { mutateAsync: register, isPending: loading } = useSignup();
 
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -26,7 +33,7 @@ export default function Register() {
     setErrorMsg("");
 
     try {
-      await register({
+      const response = await register({
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
@@ -34,7 +41,26 @@ export default function Register() {
         password: formData.password,
       });
 
-      navigate("/login");
+      if (response.success && response.user) {
+        if (response.token) {
+          localStorage.setItem("token", response.token);
+        }
+        localStorage.setItem("user", JSON.stringify(response.user));
+        if (response.user._id) {
+          localStorage.setItem("userId", response.user._id);
+        }
+        dispatch(setUser(response.user));
+        queryClient.setQueryData(["user"], { user: response.user, success: true });
+        toast.success("Account created successfully!");
+        if (response.user.role === "SUPPLIER") {
+          navigate("/supplier-dashboard");
+        } else {
+          navigate("/marketplace");
+        }
+      } else {
+        toast.success("Registration successful! Please sign in.");
+        navigate("/login");
+      }
     } catch (err) {
       console.error("Registration Error:", err);
       setErrorMsg(

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, ShoppingBag, Sparkles, ShieldCheck, Truck, Store, Tag } from 'lucide-react';
 import { useGetProducts } from '../api/productApi';

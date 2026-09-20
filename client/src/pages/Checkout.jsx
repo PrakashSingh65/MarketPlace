@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, Edit2, ExternalLink } from 'lucide-react';
+import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, Edit2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import useCart from '../hooks/useCart';
 import { useCreateOrder } from '../api/orderApi';

@@ -1,25 +1,35 @@
 import fs from 'fs';
+import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { uploadOnCloudinary } from '../config/cloudinary.js';
+
+const escapeRegex = (str = '') => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
 export const getProducts = async (req, res) => {
   try {
     const { category, subCategory, keyword } = req.query;
     let query = {};
 
-    if (category) {
-      query.category = category.toLowerCase();
+    if (category && category.trim()) {
+      query.category = category.trim().toLowerCase();
     }
-    if (subCategory) {
-      query.subCategory = subCategory;
+    if (subCategory && subCategory.trim()) {
+      query.subCategory = { $regex: new RegExp(`^${escapeRegex(subCategory.trim())}$`, 'i') };
     }
-    if (keyword) {
-      query.title = { $regex: keyword, $options: 'i' };
+    if (keyword && keyword.trim()) {
+      const safeKeyword = escapeRegex(keyword.trim());
+      query.$or = [
+        { title: { $regex: safeKeyword, $options: 'i' } },
+        { description: { $regex: safeKeyword, $options: 'i' } },
+        { category: { $regex: safeKeyword, $options: 'i' } },
+        { composition: { $regex: safeKeyword, $options: 'i' } },
+      ];
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (error) {
+    console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Error fetching products', error: error.message });
   }
 };
@@ -30,22 +40,26 @@ export const getProductsByCategory = async (req, res) => {
     const { subCategory } = req.query;
 
     const query = { 
-      category: { $regex: new RegExp(`^${categoryName}$`, 'i') } 
+      category: { $regex: new RegExp(`^${escapeRegex(categoryName || '')}$`, 'i') } 
     };
 
-    if (subCategory) {
-      query.subCategory = { $regex: new RegExp(`^${subCategory}$`, 'i') };
+    if (subCategory && subCategory.trim()) {
+      query.subCategory = { $regex: new RegExp(`^${escapeRegex(subCategory.trim())}$`, 'i') };
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (error) {
+    console.error('Error fetching category products:', error);
     res.status(500).json({ message: 'Server error fetching category products', error: error.message });
   }
 };
 
 export const getProductById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
     const product = await Product.findById(req.params.id);
     if (product) {
       res.status(200).json(product);
@@ -53,17 +67,23 @@ export const getProductById = async (req, res) => {
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (error) {
+    console.error('Error fetching product by id:', error);
     res.status(500).json({ message: 'Error fetching product', error: error.message });
   }
 };
 
 export const addProduct = async (req, res) => {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({ message: 'Please log in to add products' });
+    }
+
     const {
       title,
       description,
       category,
       subCategory,
+      fabricType,
       price,
       pricePerMeter,
       moq,
@@ -72,35 +92,61 @@ export const addProduct = async (req, res) => {
       gsm,
       composition,
       colors,
+      image,
+      imageUrl: inputImageUrl,
     } = req.body;
 
-    let imageUrl = '';
+    let imageUrl = inputImageUrl || image || '';
 
     if (req.file) {
-      const fileInput = req.file.buffer || req.file.path;
-      const cloudResponse = await uploadOnCloudinary(fileInput, 'products');
-      if (cloudResponse) {
-        imageUrl = cloudResponse.url;
+      try {
+        const fileInput = req.file.buffer || req.file.path;
+        const cloudResponse = await uploadOnCloudinary(fileInput, 'products');
+        if (cloudResponse?.url) {
+          imageUrl = cloudResponse.url;
+        }
+      } catch (cloudErr) {
+        console.warn('Cloudinary upload fallback to local file:', cloudErr.message);
+        if (req.file.filename) {
+          imageUrl = `/uploads/${req.file.filename}`;
+        }
       }
-      // Clean up local temp file created by diskStorage
-      if (req.file.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+      // Clean up local temp file created by diskStorage if needed
+      if (req.file.path && fs.existsSync(req.file.path) && imageUrl.startsWith('http')) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (unlinkErr) {
+          console.warn('Temp file unlink error:', unlinkErr.message);
+        }
       }
     }
 
+    // Default fallback image if none provided
+    if (!imageUrl) {
+      imageUrl = 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800';
+    }
+
+    // Parse colors array safely
+    let parsedColors = [];
+    if (Array.isArray(colors)) {
+      parsedColors = colors.map((c) => String(c).trim()).filter(Boolean);
+    } else if (typeof colors === 'string' && colors.trim()) {
+      parsedColors = colors.split(',').map((c) => c.trim()).filter(Boolean);
+    }
+
     const newProduct = new Product({
-      title,
-      description,
-      category: category ? category.toLowerCase() : 'fashion',
-      subCategory,
+      title: title || 'Premium Fabric',
+      description: description || '',
+      category: category && category.trim() ? category.trim().toLowerCase() : 'cotton',
+      subCategory: subCategory ? subCategory.trim() : '',
       price: Number(price || pricePerMeter || 0),
       pricePerMeter: Number(pricePerMeter || price || 0),
       moq: Number(moq || 50),
       stock: Number(stock || stockMeters || 50),
       stockMeters: Number(stockMeters || stock || 50),
       gsm: gsm ? Number(gsm) : undefined,
-      composition,
-      colors: Array.isArray(colors) ? colors : colors ? colors.split(',').map((c) => c.trim()) : [],
+      composition: composition || fabricType || '',
+      colors: parsedColors,
       image: imageUrl,
       images: imageUrl ? [imageUrl] : [],
       supplier: req.user._id,
@@ -109,16 +155,25 @@ export const addProduct = async (req, res) => {
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
+    console.error('Error adding product:', error);
     res.status(400).json({ message: 'Error adding product', error: error.message });
   }
 };
 
 export const deleteProduct = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      if (product.supplier.toString() !== req.user._id.toString() && product.user?.toString() !== req.user._id.toString()) {
+      if (
+        product.supplier?.toString() !== req.user._id.toString() &&
+        product.user?.toString() !== req.user._id.toString() &&
+        req.user.role !== 'ADMIN'
+      ) {
         return res.status(403).json({ message: 'Not authorized to delete this product' });
       }
       await product.deleteOne();
@@ -127,12 +182,17 @@ export const deleteProduct = async (req, res) => {
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (error) {
+    console.error('Error deleting product:', error);
     res.status(500).json({ message: 'Error deleting product', error: error.message });
   }
 };
 
 export const addProductReview = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
     const { rating, comment } = req.body;
     const product = await Product.findById(req.params.id);
 
@@ -153,7 +213,7 @@ export const addProductReview = async (req, res) => {
       name: req.user.name || 'Verified Buyer',
       rating: Number(rating),
       comment: comment || '',
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     product.reviews.push(review);
@@ -166,6 +226,7 @@ export const addProductReview = async (req, res) => {
 
     res.status(201).json({ message: 'Review Added Successfully', product });
   } catch (error) {
+    console.error('Error submitting review:', error);
     res.status(500).json({ message: 'Server error submitting review', error: error.message });
   }
 };

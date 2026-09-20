@@ -102,10 +102,9 @@ export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const isObjectId = id.match(/^[0-9a-fA-F]{24}$/);
-    const order = await Order.findOne({
-      $or: [{ orderId: id }, { _id: isObjectId ? id : null }]
-    }).populate('user', 'name email phone');
+    const isObjectId = id && id.match(/^[0-9a-fA-F]{24}$/);
+    const query = isObjectId ? { $or: [{ _id: id }, { orderId: id }] } : { orderId: id };
+    const order = await Order.findOne(query).populate('user', 'name email phone');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found', success: false });
@@ -157,10 +156,9 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const isObjectId = id.match(/^[0-9a-fA-F]{24}$/);
-    const order = await Order.findOne({
-      $or: [{ orderId: id }, { _id: isObjectId ? id : null }]
-    });
+    const isObjectId = id && id.match(/^[0-9a-fA-F]{24}$/);
+    const query = isObjectId ? { $or: [{ _id: id }, { orderId: id }] } : { orderId: id };
+    const order = await Order.findOne(query);
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found', success: false });

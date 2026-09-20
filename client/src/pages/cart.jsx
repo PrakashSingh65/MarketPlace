@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShieldCheck, Trash2, Bookmark, Zap, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useCart from '../hooks/useCart';

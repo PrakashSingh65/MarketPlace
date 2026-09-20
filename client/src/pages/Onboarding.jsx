@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Bot, Building2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Send, Bot, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function Onboarding() {
   const navigate = useNavigate();

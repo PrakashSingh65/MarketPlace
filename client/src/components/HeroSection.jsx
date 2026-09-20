@@ -1,4 +1,3 @@
-import React from 'react';
 import { Sparkles, ArrowRight, ShoppingBag, ShieldCheck, Truck, Store, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

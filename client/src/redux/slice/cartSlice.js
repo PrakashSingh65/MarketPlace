@@ -6,9 +6,8 @@ import { createSlice } from "@reduxjs/toolkit";
 // The actual cart data lives in React Query cache (useGetCart)
 
 const initialState = {
-  // Optimistic local count — updated on add/remove for instant UI feedback
+  items: [],
   itemCount: 0,
-  // Whether the cart drawer/sidebar is open (if applicable)
   isCartOpen: false,
 };
 
@@ -16,6 +15,10 @@ const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
+    setCartItems: (state, action) => {
+      state.items = action.payload || [];
+      state.itemCount = state.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    },
     setItemCount: (state, action) => {
       state.itemCount = action.payload;
     },
@@ -26,6 +29,7 @@ const cartSlice = createSlice({
       if (state.itemCount > 0) state.itemCount -= 1;
     },
     resetItemCount: (state) => {
+      state.items = [];
       state.itemCount = 0;
     },
     toggleCartOpen: (state) => {
@@ -38,6 +42,7 @@ const cartSlice = createSlice({
 });
 
 export const {
+  setCartItems,
   setItemCount,
   incrementItemCount,
   decrementItemCount,

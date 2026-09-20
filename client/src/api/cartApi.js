@@ -36,9 +36,11 @@ export const clearCartApi = async () => {
 // ─── React Query Hooks ────────────────────────────────────────────────────────
 
 export const useGetCart = () => {
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
   return useQuery({
     queryKey: ["cart"],
     queryFn: fetchCart,
+    enabled: hasToken,
     retry: false,
   });
 };

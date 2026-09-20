@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
 
   const { data: product, isLoading: loading } = useGetProductById(id);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [selectedColor, setSelectedColor] = useState('');
   const [added, setAdded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,7 +101,7 @@ export default function ProductDetail() {
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-[#0f0c1b] border border-purple-900/40 rounded-3xl overflow-hidden aspect-square relative shadow-2xl flex items-center justify-center group">
             <img 
-              src={product.image || product.imageUrl || fallbackImg} 
+              src={selectedImage || product.image || product.imageUrl || fallbackImg} 
               alt={product.title || product.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -113,6 +114,30 @@ export default function ProductDetail() {
               </div>
             )}
           </div>
+
+          {/* Multi-image thumbnail strip */}
+          {product.images && product.images.length > 1 && (
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {product.images.map((imgUrl, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedImage(imgUrl)}
+                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition shrink-0 cursor-pointer ${
+                    (selectedImage === imgUrl || (!selectedImage && i === 0))
+                      ? 'border-orange-500 shadow-lg shadow-orange-500/25 ring-2 ring-orange-500/30 scale-105'
+                      : 'border-purple-900/40 hover:border-purple-700/80 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`Thumbnail ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 2. PRODUCT INFORMATION */}

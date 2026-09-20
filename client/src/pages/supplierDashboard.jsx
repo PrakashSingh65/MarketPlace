@@ -47,16 +47,18 @@ export default function SupplierDashboard() {
   const [gsm, setGsm] = useState('');
   const [composition, setComposition] = useState('');
   const [colors, setColors] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   useEffect(() => {
     return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
+      imagePreviews.forEach((url) => {
+        if (url && url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
-  }, [imagePreview]);
+  }, [imagePreviews]);
 
   const handleCategoryChange = (e) => {
     const selectedCat = e.target.value;
@@ -66,12 +68,31 @@ export default function SupplierDashboard() {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const validFiles = selectedFiles.filter((f) => f.type.startsWith('image/'));
+    if (validFiles.length === 0) {
+      toast.error('Please select valid image files');
+      return;
     }
+
+    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+
+    setImageFiles((prev) => [...prev, ...validFiles]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setImagePreviews((prev) => {
+      const urlToRemove = prev[indexToRemove];
+      if (urlToRemove && urlToRemove.startsWith('blob:')) {
+        URL.revokeObjectURL(urlToRemove);
+      }
+      return prev.filter((_, idx) => idx !== indexToRemove);
+    });
+    setImageFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const resetForm = () => {
@@ -85,9 +106,13 @@ export default function SupplierDashboard() {
     setGsm('');
     setComposition('');
     setColors('');
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(null);
-    setImagePreview(null);
+    imagePreviews.forEach((url) => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    setImageFiles([]);
+    setImagePreviews([]);
   };
 
   const handleOpenModal = () => {
@@ -116,6 +141,11 @@ export default function SupplierDashboard() {
       return;
     }
 
+    if (imageFiles.length === 0) {
+      toast.error('Please select at least one product image');
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('title', cleanTitle);
@@ -139,8 +169,13 @@ export default function SupplierDashboard() {
           .forEach((c) => formData.append('colors', c));
       }
 
-      if (imageFile) {
-        formData.append('image', imageFile);
+      // Append all image files for multi-image storage
+      imageFiles.forEach((file) => {
+        formData.append('images', file);
+      });
+      // Also append first image under 'image' for backwards compatibility
+      if (imageFiles[0]) {
+        formData.append('image', imageFiles[0]);
       }
 
       await addProductMutation.mutateAsync(formData);
@@ -248,6 +283,24 @@ export default function SupplierDashboard() {
                     ✕
                   </button>
 
+                  {p.images && p.images.length > 1 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '18px',
+                      left: '18px',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(148, 163, 184, 0.2)',
+                      color: '#c7d2fe',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      fontSize: '10px',
+                      fontWeight: 'bold'
+                    }}>
+                      📷 {p.images.length}
+                    </span>
+                  )}
+
                   <img
                     src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150?text=No+Image'}
                     alt={p.title || 'Product Image'}
@@ -293,18 +346,134 @@ export default function SupplierDashboard() {
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
           padding: '20px'
         }}>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '440px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>Upload Product</h3>
+              <div>
+                <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>Upload Product</h3>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>Add catalog listing with multi-image gallery</p>
+              </div>
               <button onClick={handleCloseModal} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              <div style={{ border: '2px dashed #334155', padding: '16px', borderRadius: '12px', textAlign: 'center', backgroundColor: '#020617' }}>
-                <input type="file" accept="image/*" required onChange={handleImageChange} style={{ fontSize: '12px', color: '#94a3b8' }} />
-                {imagePreview && (
-                  <img src={imagePreview} alt="Preview" style={{ height: '80px', marginTop: '10px', borderRadius: '6px', objectFit: 'cover' }} />
+              {/* Multi-Image File Upload Zone */}
+              <div style={{ border: '2px dashed #475569', padding: '16px', borderRadius: '12px', textAlign: 'center', backgroundColor: '#020617' }}>
+                <label style={{ display: 'block', cursor: 'pointer' }}>
+                  <div style={{ color: '#818cf8', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
+                    📸 Click to Upload Photos
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '10px' }}>
+                    Select single or multiple images (PNG, JPG, WEBP up to 10MB)
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    required={imageFiles.length === 0}
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                  />
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #334155',
+                    color: '#e2e8f0',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}>
+                    + Browse Files
+                  </span>
+                </label>
+
+                {/* Grid of thumbnail previews for all uploaded images */}
+                {imagePreviews.length > 0 && (
+                  <div style={{ marginTop: '14px', borderTop: '1px solid #1e293b', paddingTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 4px' }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>
+                        Selected Images ({imagePreviews.length})
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>
+                        ★ First image is Cover
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
+                      gap: '8px',
+                      maxHeight: '160px',
+                      overflowY: 'auto',
+                      padding: '2px'
+                    }}>
+                      {imagePreviews.map((previewUrl, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            position: 'relative',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            border: idx === 0 ? '2px solid #6366f1' : '1px solid #334155',
+                            backgroundColor: '#0f172a',
+                            aspectRatio: '1',
+                          }}
+                        >
+                          <img
+                            src={previewUrl}
+                            alt={`Preview ${idx + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          {idx === 0 && (
+                            <span style={{
+                              position: 'absolute',
+                              bottom: '2px',
+                              left: '2px',
+                              backgroundColor: 'rgba(79, 70, 229, 0.9)',
+                              color: '#fff',
+                              fontSize: '8px',
+                              fontWeight: 'bold',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              letterSpacing: '0.5px'
+                            }}>
+                              COVER
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveImage(idx);
+                            }}
+                            title="Remove image"
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '18px',
+                              height: '18px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              lineHeight: 1,
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 

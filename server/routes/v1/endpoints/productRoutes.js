@@ -18,7 +18,7 @@ router.get('/', productCacheMiddleware, getProducts);
 router.get('/category/:categoryName', productCacheMiddleware, getProductsByCategory);
 router.get('/:id', productCacheMiddleware, getProductById);
 
-router.post('/', authMiddleware, isSupplier, upload.single('image'), addProduct);
+router.post('/', authMiddleware, isSupplier, upload.any(), addProduct);
 router.delete('/:id', authMiddleware, isSupplier, deleteProduct);
 router.post('/:id/reviews', authMiddleware, addProductReview);
 

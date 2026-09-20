@@ -101,39 +101,66 @@ export const addProduct = async (req, res) => {
 
     let imageUrl = inputImageUrl || image || '';
 
-    // Handle file upload safely from memory buffer or disk
-    if (req.file) {
-      try {
-        const fileInput = req.file.buffer || req.file.path;
-        const cloudResponse = await uploadOnCloudinary(fileInput, 'products');
-        if (cloudResponse?.url) {
-          imageUrl = cloudResponse.url;
-        }
-      } catch (cloudErr) {
-        console.warn('Cloudinary upload fallback to inline data URI:', cloudErr.message);
-        // If Cloudinary is offline or fails, create an inline base64 Data URI so the image is preserved without error
-        if (req.file.buffer) {
-          const mime = req.file.mimetype || 'image/jpeg';
-          imageUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
-        } else if (req.file.filename) {
-          imageUrl = `/uploads/${req.file.filename}`;
-        }
-      }
-
-      // Clean up temp disk file if diskStorage was somehow used
-      if (req.file.path && fs.existsSync(req.file.path) && imageUrl.startsWith('http')) {
-        try {
-          fs.unlinkSync(req.file.path);
-        } catch (unlinkErr) {
-          console.warn('Temp file unlink error:', unlinkErr.message);
-        }
-      }
+    // Handle multiple or single file uploads safely
+    const uploadedFiles = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      uploadedFiles.push(...req.files);
+    } else if (req.files && typeof req.files === 'object') {
+      Object.values(req.files).forEach((item) => {
+        if (Array.isArray(item)) uploadedFiles.push(...item);
+        else if (item) uploadedFiles.push(item);
+      });
+    } else if (req.file) {
+      uploadedFiles.push(req.file);
     }
 
-    // Default curated fallback image if none provided
-    if (!imageUrl) {
+    const uploadedImageUrls = [];
+    if (uploadedFiles.length > 0) {
+      await Promise.all(
+        uploadedFiles.map(async (file) => {
+          let url = '';
+          try {
+            const fileInput = file.buffer || file.path;
+            const cloudResponse = await uploadOnCloudinary(fileInput, 'products');
+            if (cloudResponse?.url) {
+              url = cloudResponse.url;
+            }
+          } catch (cloudErr) {
+            console.warn('Cloudinary upload fallback to inline data URI:', cloudErr.message);
+          }
+
+          if (!url) {
+            if (file.buffer) {
+              const mime = file.mimetype || 'image/jpeg';
+              url = `data:${mime};base64,${file.buffer.toString('base64')}`;
+            } else if (file.filename) {
+              url = `/uploads/${file.filename}`;
+            }
+          }
+
+          if (file.path && fs.existsSync(file.path) && url && url.startsWith('http')) {
+            try {
+              fs.unlinkSync(file.path);
+            } catch (unlinkErr) {
+              console.warn('Temp file unlink error:', unlinkErr.message);
+            }
+          }
+
+          if (url) {
+            uploadedImageUrls.push(url);
+          }
+        })
+      );
+    }
+
+    // Determine primary featured image and all images
+    if (uploadedImageUrls.length > 0) {
+      imageUrl = uploadedImageUrls[0];
+    } else if (!imageUrl) {
       imageUrl = 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=800';
     }
+
+    const allImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : (imageUrl ? [imageUrl] : []);
 
     // Parse colors array safely
     let parsedColors = [];
@@ -170,7 +197,7 @@ export const addProduct = async (req, res) => {
       composition: (composition || fabricType || '').trim(),
       colors: parsedColors,
       image: imageUrl,
-      images: imageUrl ? [imageUrl] : [],
+      images: allImages,
       supplier: req.user._id,
       rating: 0,
       numReviews: 0,

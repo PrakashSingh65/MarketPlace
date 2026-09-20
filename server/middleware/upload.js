@@ -60,6 +60,51 @@ const upload = {
       }
       next();
     });
+  },
+  array: (fieldName = 'images', maxCount = 10) => (req, res, next) => {
+    multerInstance.array(fieldName, maxCount)(req, res, (err) => {
+      if (err) {
+        console.warn(`Multer ${fieldName} array upload error caught:`, err.message);
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: 'Image size must be less than 10MB' });
+          }
+          return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || 'Invalid image file' });
+      }
+      next();
+    });
+  },
+  fields: (fieldsConfig) => (req, res, next) => {
+    multerInstance.fields(fieldsConfig)(req, res, (err) => {
+      if (err) {
+        console.warn('Multer fields upload error caught:', err.message);
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: 'Image size must be less than 10MB' });
+          }
+          return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || 'Invalid image file' });
+      }
+      next();
+    });
+  },
+  any: () => (req, res, next) => {
+    multerInstance.any()(req, res, (err) => {
+      if (err) {
+        console.warn('Multer any upload error caught:', err.message);
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: 'Image size must be less than 10MB' });
+          }
+          return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || 'Invalid image file' });
+      }
+      next();
+    });
   }
 };
 

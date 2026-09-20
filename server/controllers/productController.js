@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
 import { uploadOnCloudinary } from '../config/cloudinary.js';
+import { invalidateProductCache } from '../middleware/cacheMiddleware.js';
 
 const escapeRegex = (str = '') => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
@@ -176,6 +177,7 @@ export const addProduct = async (req, res) => {
     });
 
     const savedProduct = await newProduct.save();
+    await invalidateProductCache(savedProduct._id);
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error('Error adding product:', error);
@@ -221,6 +223,7 @@ export const deleteProduct = async (req, res) => {
     }
 
     await product.deleteOne();
+    await invalidateProductCache(product._id);
     return res.status(200).json({ message: 'Product removed successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -264,6 +267,7 @@ export const addProductReview = async (req, res) => {
     product.rating = totalRating / product.reviews.length;
 
     await product.save();
+    await invalidateProductCache(product._id);
 
     res.status(201).json({ message: 'Review Added Successfully', product });
   } catch (error) {

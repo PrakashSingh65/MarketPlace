@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
+import { invalidateCartCache } from '../middleware/cacheMiddleware.js';
 
 // Helper: Get authenticated user _id from req.user (set by authMiddleware)
 const getUserId = (req) => req.user?._id;
@@ -48,6 +49,7 @@ export const addToCart = async (req, res) => {
     }
 
     await cart.save();
+    await invalidateCartCache(userId);
 
     const populatedCart = await Cart.findOne({ userId }).populate('items.productId');
     if (populatedCart) {
@@ -120,6 +122,7 @@ export const removeFromCart = async (req, res) => {
     }
 
     await cart.save();
+    await invalidateCartCache(userId);
 
     const populatedCart = await Cart.findById(cart._id).populate('items.productId');
     if (populatedCart) {
@@ -154,6 +157,7 @@ export const clearCart = async (req, res) => {
 
     cart.items = [];
     await cart.save();
+    await invalidateCartCache(userId);
 
     return res.status(200).json({ success: true, message: 'Cart cleared successfully', cart });
   } catch (error) {
@@ -197,6 +201,7 @@ export const updateCartItem = async (req, res) => {
 
     cart.items[itemIndex].quantity = Number(quantity);
     await cart.save();
+    await invalidateCartCache(userId);
 
     const populatedCart = await Cart.findById(cart._id).populate('items.productId');
     if (populatedCart) {

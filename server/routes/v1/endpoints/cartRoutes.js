@@ -7,14 +7,15 @@ import {
   updateCartItem,
 } from '../../../controllers/CartController.js';
 import { authMiddleware } from '../../../middleware/auth.middleware.js';
+import { cartCacheMiddleware } from '../../../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
-// All cart routes require authentication — user sees only their own cart
-router.get('/', authMiddleware, getCart);                               // GET own cart
-router.post('/add', authMiddleware, addToCart);                         // POST add item
-router.put('/update/:productId', authMiddleware, updateCartItem);       // PUT update qty
-router.delete('/remove/:productId', authMiddleware, removeFromCart);    // DELETE single item
-router.delete('/clear', authMiddleware, clearCart);                     // DELETE clear all
+// GET own cart cached with Redis (TTL: 30s) scoped to authenticated user
+router.get('/', authMiddleware, cartCacheMiddleware, getCart);
+router.post('/add', authMiddleware, addToCart);
+router.put('/update/:productId', authMiddleware, updateCartItem);
+router.delete('/remove/:productId', authMiddleware, removeFromCart);
+router.delete('/clear', authMiddleware, clearCart);
 
 export default router;

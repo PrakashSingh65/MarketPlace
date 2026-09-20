@@ -1,4 +1,5 @@
 import Order from '../models/Order.js';
+import { invalidateOrderCache } from '../middleware/cacheMiddleware.js';
 
 export const createOrder = async (req, res) => {
   try {
@@ -70,6 +71,7 @@ export const createOrder = async (req, res) => {
     });
 
     const savedOrder = await order.save();
+    await invalidateOrderCache(resolvedUserId, savedOrder._id);
     res.status(201).json({ 
       message: 'Order placed successfully', 
       success: true,
@@ -147,6 +149,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const updatedOrder = await order.save();
+    await invalidateOrderCache(order.user, order._id);
     res.status(200).json({ message: 'Order status updated', success: true, order: updatedOrder });
   } catch (error) {
     res.status(500).json({ message: 'Error updating order status', error: error.message, success: false });
@@ -170,6 +173,7 @@ export const cancelOrder = async (req, res) => {
 
     order.status = 'Cancelled';
     const cancelledOrder = await order.save();
+    await invalidateOrderCache(order.user, order._id);
 
     res.status(200).json({ message: 'Order cancelled successfully', success: true, order: cancelledOrder });
   } catch (error) {

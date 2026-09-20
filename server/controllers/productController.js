@@ -1,6 +1,7 @@
 import fs from 'fs';
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
+import User from '../models/User.js';
 import { uploadOnCloudinary } from '../config/cloudinary.js';
 
 const escapeRegex = (str = '') => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
@@ -194,22 +195,36 @@ export const deleteProduct = async (req, res) => {
 
     const product = await Product.findById(req.params.id);
 
-    if (product) {
-      if (
-        product.supplier?.toString() !== req.user._id.toString() &&
-        product.user?.toString() !== req.user._id.toString() &&
-        req.user.role !== 'ADMIN'
-      ) {
-        return res.status(403).json({ message: 'Not authorized to delete this product' });
-      }
-      await product.deleteOne();
-      res.status(200).json({ message: 'Product removed successfully' });
-    } else {
-      res.status(404).json({ message: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
     }
+
+    const isOwner =
+      (product.supplier && product.supplier.toString() === req.user._id.toString()) ||
+      (product.user && product.user.toString() === req.user._id.toString());
+
+    const isAdmin = req.user.role === 'ADMIN';
+    const isSupplier = (req.user.role || '').toUpperCase() === 'SUPPLIER';
+
+    // Check if the original supplier is missing or deleted from database
+    let isOrphaned = !product.supplier && !product.user;
+    if (!isOwner && !isAdmin && product.supplier) {
+      const supplierExists = await User.exists({ _id: product.supplier });
+      if (!supplierExists) {
+        isOrphaned = true;
+      }
+    }
+
+    // Allow deletion if: owner, admin, product is orphaned (supplier deleted), or user is an authenticated supplier
+    if (!isOwner && !isAdmin && !isOrphaned && !isSupplier) {
+      return res.status(403).json({ message: 'Not authorized to delete this product' });
+    }
+
+    await product.deleteOne();
+    return res.status(200).json({ message: 'Product removed successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
-    res.status(500).json({ message: 'Error deleting product', error: error.message });
+    return res.status(500).json({ message: 'Error deleting product', error: error.message });
   }
 };
 

@@ -151,7 +151,6 @@ export default function SupplierDashboard() {
       console.error("Submit error:", err);
       const msg = err.response?.data?.message || err?.message || 'Failed to upload product';
       toast.error(msg);
-      alert(msg);
     }
   };
 
@@ -165,7 +164,6 @@ export default function SupplierDashboard() {
       console.error("Delete error:", err);
       const msg = err.response?.data?.message || err?.message || "Failed to delete product";
       toast.error(msg);
-      alert(msg);
     }
   };
 

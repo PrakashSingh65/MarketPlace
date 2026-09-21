@@ -40,7 +40,12 @@ export const useCheckAuth = () => {
   return useQuery({
     queryKey: ["user"],
     queryFn: async () => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      let token = null;
+      try {
+        token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      } catch (err) {
+        console.warn("Storage access restricted by browser:", err);
+      }
       if (!token) {
         return null;
       }

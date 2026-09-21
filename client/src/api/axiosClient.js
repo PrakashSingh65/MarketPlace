@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const VITE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const VITE_API_URL = rawApiUrl.replace(/\/+$/, "");
 
 export const axiosClient = axios.create({
   baseURL: `${VITE_API_URL}/api/v1`,
@@ -9,9 +10,13 @@ export const axiosClient = axios.create({
 
 // Attach Authorization header if token exists in localStorage
 axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (err) {
+    console.warn("Storage access restricted by browser:", err);
   }
   return config;
 }, (error) => {

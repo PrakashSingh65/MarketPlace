@@ -43,6 +43,21 @@ app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", routes);
+app.use("/auth", routes);
+
+// Allow root-level POST /login, /register, and /logout
+app.post("/login", (req, res, next) => {
+  req.url = "/v1/auth/login";
+  routes(req, res, next);
+});
+app.post("/register", (req, res, next) => {
+  req.url = "/v1/auth/register";
+  routes(req, res, next);
+});
+app.post("/logout", (req, res, next) => {
+  req.url = "/v1/auth/logout";
+  routes(req, res, next);
+});
 
 // In development, redirect browser page requests to frontend dev server
 app.use((req, res, next) => {

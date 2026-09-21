@@ -18,10 +18,13 @@ import CategoriesPage from "@/pages/CategoriesPage";
 
 // Dashboards & Support
 import SupplierDashboard from "@/pages/supplierDashboard";
+import SupplierProfile from "@/pages/SupplierProfile";
 import BuyerDashboard from "@/pages/BuyerDashboard";
 import OrderDetails from "@/pages/OrderDetails";
 import Profile from "@/pages/Profile";
 import CustomerCare from "@/pages/CustomerCare";
+import AddProduct from "@/pages/AddProduct";
+import MyOrders from "@/pages/MyOrder";
 
 import App from "@/App";
 
@@ -32,6 +35,7 @@ const router = createBrowserRouter([
     children: [
       { path: "", element: <LandingPage /> },
       { path: "login", element: <Login /> },
+      { path: "signin", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "signup", element: <Register /> },
       { path: "onboarding", element: <Onboarding /> },
@@ -41,14 +45,17 @@ const router = createBrowserRouter([
       { path: "products", element: <Marketplace /> },
       { path: "categories", element: <CategoriesPage /> },
       { path: "product/:id", element: <ProductDetail /> },
+      { path: "add-product", element: <AddProduct /> },
       { path: "cart", element: <Cart /> },
       { path: "customer-care", element: <CustomerCare /> },
       { path: "wishlist", element: <Wishlist /> },
       { path: "plus-zone", element: <PlusZone /> },
       { path: "orders", element: <BuyerDashboard /> },
-      { path: "my-orders", element: <BuyerDashboard /> },
+      { path: "my-orders", element: <MyOrders /> },
       { path: "buyer-dashboard", element: <BuyerDashboard /> },
       { path: "supplier-dashboard", element: <SupplierDashboard /> },
+      { path: "supplier-profile", element: <SupplierProfile /> },
+      { path: "supplier/profile", element: <SupplierProfile /> },
       { path: "order/:orderId", element: <OrderDetails /> },
       { path: "order-details", element: <OrderDetails /> },
       { path: "order-details/:orderId", element: <OrderDetails /> },

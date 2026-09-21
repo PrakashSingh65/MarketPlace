@@ -35,19 +35,23 @@ export default function Register() {
     try {
       const response = await register({
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
         role: formData.role,
         password: formData.password,
       });
 
       if (response.success && response.user) {
-        if (response.token) {
-          localStorage.setItem("token", response.token);
-        }
-        localStorage.setItem("user", JSON.stringify(response.user));
-        if (response.user._id) {
-          localStorage.setItem("userId", response.user._id);
+        try {
+          if (response.token) {
+            localStorage.setItem("token", response.token);
+          }
+          localStorage.setItem("user", JSON.stringify(response.user));
+          if (response.user._id) {
+            localStorage.setItem("userId", response.user._id);
+          }
+        } catch (storageErr) {
+          console.warn("Storage access restricted by browser:", storageErr);
         }
         dispatch(setUser(response.user));
         queryClient.setQueryData(["user"], { user: response.user, success: true });

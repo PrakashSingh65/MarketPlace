@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { 
+  Plus, Package, PackagePlus, RefreshCw, Trash2, 
+  ExternalLink, Layers, Search, X, Tag, 
+  AlertCircle, Upload, Check
+} from 'lucide-react';
 import { useGetProducts, useAddProduct, useDeleteProduct } from '../api/productApi';
 import { toggleAddProductModal } from '../redux/slice/productSlice';
 
@@ -28,28 +35,43 @@ const CATEGORY_MAP = {
 
 export default function SupplierDashboard() {
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   
-  const isModalOpen = useSelector((state) => state.productUI?.isAddProductModalOpen ?? false);
+  // Dual-support modal state: local state + Redux for instant reactivity
+  const reduxModalOpen = useSelector((state) => state.productUI?.isAddProductModalOpen ?? false);
+  const [localModalOpen, setLocalModalOpen] = useState(false);
+  const isModalOpen = localModalOpen || reduxModalOpen;
 
-  const { data: fetchedData, isLoading, isError, refetch } = useGetProducts();
-  const products = Array.isArray(fetchedData) ? fetchedData : fetchedData?.products || [];
+  const { data: fetchedData, isLoading, isError, error, refetch } = useGetProducts();
+  const products = useMemo(() => {
+    return Array.isArray(fetchedData) ? fetchedData : fetchedData?.products || [];
+  }, [fetchedData]);
 
   const addProductMutation = useAddProduct();
   const deleteProductMutation = useDeleteProduct();
 
+  // Search and filter state for product catalog
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilterCategory, setSelectedFilterCategory] = useState('all');
+
+  // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('cotton');
   const [subCategory, setSubCategory] = useState(CATEGORY_MAP['cotton'][0] || '');
   const [price, setPrice] = useState('');
   const [moq, setMoq] = useState('50');
-  const [stock, setStock] = useState('50');
+  const [stock, setStock] = useState('100');
   const [gsm, setGsm] = useState('');
   const [composition, setComposition] = useState('');
   const [colors, setColors] = useState('');
+  
+  // Multi-image upload state
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Clean up object URLs on unmount or preview changes
   useEffect(() => {
     return () => {
       imagePreviews.forEach((url) => {
@@ -73,7 +95,7 @@ export default function SupplierDashboard() {
 
     const validFiles = selectedFiles.filter((f) => f.type.startsWith('image/'));
     if (validFiles.length === 0) {
-      toast.error('Please select valid image files');
+      toast.error('Please select valid image files (JPG, PNG, WEBP)');
       return;
     }
 
@@ -102,7 +124,7 @@ export default function SupplierDashboard() {
     setSubCategory(CATEGORY_MAP['cotton'][0] || '');
     setPrice('');
     setMoq('50');
-    setStock('50');
+    setStock('100');
     setGsm('');
     setComposition('');
     setColors('');
@@ -116,11 +138,15 @@ export default function SupplierDashboard() {
   };
 
   const handleOpenModal = () => {
-    dispatch(toggleAddProductModal());
+    setLocalModalOpen(true);
+    if (!reduxModalOpen) {
+      dispatch(toggleAddProductModal());
+    }
   };
 
   const handleCloseModal = () => {
-    if (isModalOpen) {
+    setLocalModalOpen(false);
+    if (reduxModalOpen) {
       dispatch(toggleAddProductModal());
     }
     resetForm();
@@ -142,10 +168,11 @@ export default function SupplierDashboard() {
     }
 
     if (imageFiles.length === 0) {
-      toast.error('Please select at least one product image');
+      toast.error('Please upload at least one product image');
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('title', cleanTitle);
@@ -169,23 +196,29 @@ export default function SupplierDashboard() {
           .forEach((c) => formData.append('colors', c));
       }
 
-      // Append all image files for multi-image storage
+      // Multi-image upload: append all selected photos
       imageFiles.forEach((file) => {
         formData.append('images', file);
       });
-      // Also append first image under 'image' for backwards compatibility
+      // Also append primary file under 'image' for backwards compatibility
       if (imageFiles[0]) {
         formData.append('image', imageFiles[0]);
       }
 
       await addProductMutation.mutateAsync(formData);
 
-      toast.success('Product uploaded successfully!');
+      // Invalidate queries and refetch to immediately display the new product
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await refetch();
+
+      toast.success('Product uploaded and added to catalog successfully!');
       handleCloseModal();
     } catch (err) {
       console.error("Submit error:", err);
       const msg = err.response?.data?.message || err?.message || 'Failed to upload product';
       toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -194,6 +227,8 @@ export default function SupplierDashboard() {
 
     try {
       await deleteProductMutation.mutateAsync(id);
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await refetch();
       toast.success("Product deleted successfully");
     } catch (err) {
       console.error("Delete error:", err);
@@ -202,271 +237,388 @@ export default function SupplierDashboard() {
     }
   };
 
-  const labelStyle = { fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' };
-  const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#020617', border: '1px solid #334155', color: '#fff', boxSizing: 'border-box', outline: 'none' };
+  // Filtered products list based on search and category
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesCategory = selectedFilterCategory === 'all' || 
+        (p.category || '').toLowerCase() === selectedFilterCategory.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q || 
+        (p.title || '').toLowerCase().includes(q) || 
+        (p.description || '').toLowerCase().includes(q) ||
+        (p.subCategory || '').toLowerCase().includes(q) ||
+        (p.composition || '').toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, searchQuery, selectedFilterCategory]);
+
+  // Catalog statistics
+  const totalStockMeters = useMemo(() => {
+    return products.reduce((acc, p) => acc + (Number(p.stock || p.stockMeters || 0)), 0);
+  }, [products]);
+
+  const uniqueCategoriesCount = useMemo(() => {
+    return new Set(products.map((p) => (p.category || '').toLowerCase()).filter(Boolean)).size;
+  }, [products]);
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#020617', color: '#fff', minHeight: '100vh' }}>
+    <div className="min-h-screen bg-[#070714] text-slate-100 p-4 sm:p-6 lg:p-8 font-sans pb-24">
+      <div className="max-w-7xl mx-auto space-y-6">
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Supplier Dashboard</h1>
-          <p style={{ color: '#94a3b8', fontSize: '12px' }}>Manage your catalog and uploads</p>
-        </div>
+        {/* ── TOP HEADER WITH "+ ADD PRODUCT" BUTTON AT TOP RIGHT ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#0f0c1b]/90 border border-purple-900/40 p-6 rounded-3xl gap-4 shadow-2xl backdrop-blur-md">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
+                <Package size={20} />
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Supplier Dashboard
+              </h1>
+            </div>
+            <p className="text-xs text-slate-400">
+              Manage your textile listings, inventory, and upload new fabrics to the marketplace
+            </p>
+          </div>
 
-        <button
-          onClick={handleOpenModal}
-          style={{
-            backgroundColor: '#4f46e5',
-            color: '#fff',
-            padding: '10px 18px',
-            borderRadius: '12px',
-            border: 'none',
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-        >
-          + Add New Product
-        </button>
-      </div>
+          {/* Top Right Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => refetch()}
+              title="Refresh inventory"
+              className="flex items-center gap-1.5 text-xs bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/30 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Refresh
+            </button>
 
-      <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid #1e293b' }}>
-        <h3 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 'bold' }}>
-          Active Products ({products.length})
-        </h3>
-
-        {isLoading && (
-          <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
-            Loading catalog products...
-          </p>
-        )}
-
-        {isError && (
-          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '16px', textAlign: 'center' }}>
-            <p style={{ fontSize: '13px' }}>Backend connection failed.</p>
-            <button onClick={() => refetch()} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', marginTop: '8px', fontSize: '11px' }}>
-              Retry
+            {/* Prominent + Add Product Button */}
+            <button
+              onClick={handleOpenModal}
+              className="flex items-center gap-2 text-xs sm:text-sm bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-extrabold px-5 py-2.5 rounded-xl transition shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            >
+              <Plus size={16} strokeWidth={3} />
+              <span>+ Add Product</span>
             </button>
           </div>
-        )}
+        </div>
 
-        {!isLoading && !isError && products.length === 0 && (
-          <p style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', padding: '20px' }}>
-            No products added yet. Click "+ Add New Product" button above.
-          </p>
-        )}
-
-        {!isLoading && products.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-            {products.map((p) => {
-              const productId = p._id || p.id;
-              return (
-                <div key={productId} style={{ backgroundColor: '#020617', padding: '12px', borderRadius: '12px', border: '1px solid #1e293b', position: 'relative' }}>
-                  
-                  <button
-                    onClick={() => handleDeleteProduct(productId)}
-                    title="Delete Product"
-                    style={{
-                      position: 'absolute',
-                      top: '18px',
-                      right: '18px',
-                      background: 'rgba(239, 68, 68, 0.8)',
-                      border: 'none',
-                      color: '#fff',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    ✕
-                  </button>
-
-                  {p.images && p.images.length > 1 && (
-                    <span style={{
-                      position: 'absolute',
-                      top: '18px',
-                      left: '18px',
-                      background: 'rgba(15, 23, 42, 0.85)',
-                      backdropFilter: 'blur(4px)',
-                      border: '1px solid rgba(148, 163, 184, 0.2)',
-                      color: '#c7d2fe',
-                      padding: '2px 6px',
-                      borderRadius: '6px',
-                      fontSize: '10px',
-                      fontWeight: 'bold'
-                    }}>
-                      📷 {p.images.length}
-                    </span>
-                  )}
-
-                  <img
-                    src={(p.images && p.images[0]) || p.image || 'https://via.placeholder.com/150?text=No+Image'}
-                    alt={p.title || 'Product Image'}
-                    style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px' }}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/150?text=Image+Error';
-                    }}
-                  />
-                  <p style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.title || 'Untitled Product'}
-                  </p>
-                  
-                  <div style={{ display: 'flex', gap: '4px', margin: '4px 0', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '9px', backgroundColor: '#312e81', color: '#c7d2fe', padding: '2px 6px', borderRadius: '4px' }}>
-                      {p.category || 'General'}
-                    </span>
-                    {p.subCategory && (
-                      <span style={{ fontSize: '9px', backgroundColor: '#1e293b', color: '#94a3b8', padding: '2px 6px', borderRadius: '4px' }}>
-                        {p.subCategory}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                    <p style={{ color: '#818cf8', fontSize: '13px', fontWeight: 'bold' }}>
-                      ₹{p.pricePerMeter ?? p.price ?? 0}
-                    </p>
-                    {p.stock !== undefined && (
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>Stock: {p.stock}</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {/* ── CATALOG METRICS STATS ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-[#0f0c1b]/80 border border-purple-900/30 p-4 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Active Catalog Items</p>
+              <p className="text-2xl font-extrabold text-white mt-0.5">{products.length}</p>
+            </div>
+            <div className="p-3 bg-purple-950/50 border border-purple-800/40 rounded-xl text-purple-300">
+              <Layers size={18} />
+            </div>
           </div>
-        )}
+
+          <div className="bg-[#0f0c1b]/80 border border-purple-900/30 p-4 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Total Stock Available</p>
+              <p className="text-2xl font-extrabold text-emerald-400 mt-0.5">{totalStockMeters.toLocaleString()} <span className="text-xs text-slate-400 font-normal">meters</span></p>
+            </div>
+            <div className="p-3 bg-emerald-950/40 border border-emerald-800/40 rounded-xl text-emerald-300">
+              <Package size={18} />
+            </div>
+          </div>
+
+          <div className="bg-[#0f0c1b]/80 border border-purple-900/30 p-4 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Fabric Categories</p>
+              <p className="text-2xl font-extrabold text-amber-400 mt-0.5">{uniqueCategoriesCount}</p>
+            </div>
+            <div className="p-3 bg-amber-950/40 border border-amber-800/40 rounded-xl text-amber-300">
+              <Tag size={18} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── SEARCH & FILTER BAR ── */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-[#0a0718] border border-purple-900/30 p-3.5 rounded-2xl">
+          <div className="relative w-full md:w-80">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products by title, weave, spec..."
+              className="w-full bg-[#070714] border border-purple-900/40 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Filter:</span>
+            {['all', 'cotton', 'denim', 'silk', 'linen', 'knits', 'polyester'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedFilterCategory(cat)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition cursor-pointer capitalize whitespace-nowrap ${
+                  selectedFilterCategory === cat
+                    ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                    : 'bg-purple-950/40 text-slate-400 hover:text-white border border-purple-900/30'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PRODUCTS CATALOG LISTING GRID ── */}
+        <div className="bg-[#0f0c1b]/80 border border-purple-900/40 p-6 rounded-3xl space-y-5 shadow-xl">
+          <div className="flex items-center justify-between border-b border-purple-900/30 pb-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Layers size={18} className="text-orange-400" />
+              Active Inventory ({filteredProducts.length})
+            </h2>
+            <button
+              onClick={handleOpenModal}
+              className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1 cursor-pointer transition"
+            >
+              <Plus size={14} /> Add Another Fabric
+            </button>
+          </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="py-16 text-center text-slate-400 space-y-3">
+              <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs">Loading verified catalog products...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {isError && (
+            <div className="bg-rose-950/30 border border-rose-800/40 p-4 rounded-2xl text-rose-300 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-rose-400 shrink-0" />
+                <span>Error loading inventory: {error?.message || 'Backend connection failed'}</span>
+              </div>
+              <button onClick={() => refetch()} className="bg-rose-900/60 hover:bg-rose-800/60 px-3 py-1 rounded-lg text-white text-xs font-semibold">
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !isError && filteredProducts.length === 0 && (
+            <div className="py-16 text-center border border-dashed border-purple-900/40 rounded-2xl bg-[#0a0718] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-400 flex items-center justify-center mx-auto">
+                <PackagePlus size={24} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">No products found</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  {searchQuery 
+                    ? `No products match "${searchQuery}". Try clearing search filters.` 
+                    : "You haven't added any products yet. Click below to add your first product to the catalog."}
+                </p>
+              </div>
+              <button
+                onClick={handleOpenModal}
+                className="inline-flex items-center gap-2 text-xs bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl transition shadow-md shadow-orange-500/20 cursor-pointer"
+              >
+                <Plus size={14} /> + Add Your First Product
+              </button>
+            </div>
+          )}
+
+          {/* Product Cards Grid */}
+          {!isLoading && filteredProducts.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+              {filteredProducts.map((p) => {
+                const productId = p._id || p.id;
+                const imagesCount = p.images?.length || (p.image ? 1 : 0);
+                const displayImage = (p.images && p.images[0]) || p.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=600';
+
+                return (
+                  <div 
+                    key={productId} 
+                    className="bg-[#0a0718] border border-purple-900/30 hover:border-purple-700/60 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between group shadow-lg"
+                  >
+                    {/* Image Box */}
+                    <div className="relative aspect-video sm:aspect-square overflow-hidden bg-[#070714]">
+                      <img
+                        src={displayImage}
+                        alt={p.title || 'Product'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=600';
+                        }}
+                      />
+
+                      {/* Multiple Photos Badge */}
+                      {imagesCount > 1 && (
+                        <span className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-md border border-purple-500/30 text-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                          📷 {imagesCount} photos
+                        </span>
+                      )}
+
+                      {/* Category Badge */}
+                      <span className="absolute bottom-2.5 left-2.5 bg-[#070714]/80 backdrop-blur-md border border-purple-500/30 text-orange-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
+                        {p.category || 'Fabric'}
+                      </span>
+
+                      {/* Quick Delete Button */}
+                      <button
+                        onClick={() => handleDeleteProduct(productId)}
+                        title="Delete product"
+                        className="absolute top-2.5 right-2.5 bg-rose-950/80 hover:bg-rose-600 border border-rose-700/50 text-white w-7 h-7 rounded-lg flex items-center justify-center text-xs transition opacity-80 group-hover:opacity-100 cursor-pointer shadow-md"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        {p.subCategory && (
+                          <span className="text-[10px] text-purple-300 font-medium tracking-wide block">
+                            {p.subCategory}
+                          </span>
+                        )}
+                        <h3 className="font-bold text-sm text-white line-clamp-1 group-hover:text-orange-400 transition">
+                          {p.title || 'Untitled Fabric'}
+                        </h3>
+                        {p.gsm && (
+                          <span className="inline-block text-[10px] bg-purple-950/60 text-purple-300 px-1.5 py-0.5 rounded mt-1 font-mono">
+                            {p.gsm} GSM
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-purple-900/30">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">Wholesale Rate</span>
+                            <span className="text-base font-black text-orange-400">
+                              ₹{p.pricePerMeter ?? p.price ?? 0}
+                              <span className="text-[10px] text-slate-400 font-normal"> /m</span>
+                            </span>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 block">Stock</span>
+                            <span className="text-xs font-semibold text-emerald-400">
+                              {p.stock ?? p.stockMeters ?? 0}m
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Link */}
+                        <div className="mt-3 pt-2.5 border-t border-purple-900/20 flex items-center justify-between text-xs">
+                          <span className="text-[10px] text-slate-500">MOQ: {p.moq || 50}m</span>
+                          <Link
+                            to={`/product/${productId}`}
+                            className="inline-flex items-center gap-1 text-[11px] text-orange-400 hover:text-orange-300 font-medium transition"
+                          >
+                            View Details <ExternalLink size={11} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
 
+      {/* ── FULL PRODUCT UPLOAD MODAL ── */}
       {isModalOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)',
-          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '440px', border: '1px solid #334155', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div>
-                <h3 style={{ fontWeight: 'bold', fontSize: '16px' }}>Upload Product</h3>
-                <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>Add catalog listing with multi-image gallery</p>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="bg-[#0f0c1b] border border-purple-900/60 rounded-3xl p-6 sm:p-8 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-purple-900/40 pb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
+                  <PackagePlus size={20} />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Upload New Product</h3>
+                  <p className="text-xs text-slate-400">List fabric with wholesale pricing & multi-image gallery</p>
+                </div>
               </div>
-              <button onClick={handleCloseModal} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+              <button 
+                onClick={handleCloseModal}
+                className="w-8 h-8 rounded-full bg-purple-950/50 hover:bg-purple-900/50 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Upload Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Multi-Image File Upload Zone */}
-              <div style={{ border: '2px dashed #475569', padding: '16px', borderRadius: '12px', textAlign: 'center', backgroundColor: '#020617' }}>
-                <label style={{ display: 'block', cursor: 'pointer' }}>
-                  <div style={{ color: '#818cf8', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
-                    📸 Click to Upload Photos
+              {/* 1. Multi-Image File Upload Zone */}
+              <div className="border-2 border-dashed border-purple-800/40 hover:border-purple-600/60 rounded-2xl p-4 bg-[#0a0718] transition text-center">
+                <label className="block cursor-pointer">
+                  <div className="w-10 h-10 rounded-xl bg-purple-950/60 border border-purple-800/50 text-orange-400 flex items-center justify-center mx-auto mb-2">
+                    <Upload size={18} />
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '10px' }}>
-                    Select single or multiple images (PNG, JPG, WEBP up to 10MB)
-                  </div>
+                  <p className="text-xs font-bold text-white">Click or Drag Product Images</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 mb-2">
+                    Upload multiple photos (PNG, JPG, WEBP up to 10MB each)
+                  </p>
                   <input
                     type="file"
                     accept="image/*"
                     multiple
                     required={imageFiles.length === 0}
                     onChange={handleImageChange}
-                    style={{ display: 'none' }}
+                    className="hidden"
                   />
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '6px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
-                    color: '#e2e8f0',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}>
+                  <span className="inline-block text-xs bg-purple-950/80 hover:bg-purple-900/80 border border-purple-700/50 text-purple-200 px-3 py-1.5 rounded-lg transition font-medium">
                     + Browse Files
                   </span>
                 </label>
 
-                {/* Grid of thumbnail previews for all uploaded images */}
+                {/* Thumbnails list/grid */}
                 {imagePreviews.length > 0 && (
-                  <div style={{ marginTop: '14px', borderTop: '1px solid #1e293b', paddingTop: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 4px' }}>
-                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>
-                        Selected Images ({imagePreviews.length})
-                      </span>
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>
-                        ★ First image is Cover
-                      </span>
+                  <div className="mt-3 pt-3 border-t border-purple-900/30">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2 px-1">
+                      <span className="font-semibold text-purple-300">Selected Photos ({imagePreviews.length})</span>
+                      <span className="text-[10px]">★ First image is Cover</span>
                     </div>
 
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
-                      gap: '8px',
-                      maxHeight: '160px',
-                      overflowY: 'auto',
-                      padding: '2px'
-                    }}>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-36 overflow-y-auto p-1">
                       {imagePreviews.map((previewUrl, idx) => (
                         <div
                           key={idx}
-                          style={{
-                            position: 'relative',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            border: idx === 0 ? '2px solid #6366f1' : '1px solid #334155',
-                            backgroundColor: '#0f172a',
-                            aspectRatio: '1',
-                          }}
+                          className={`relative aspect-square rounded-xl overflow-hidden bg-slate-900 border ${
+                            idx === 0 ? 'border-orange-500 ring-2 ring-orange-500/30' : 'border-purple-900/40'
+                          }`}
                         >
                           <img
                             src={previewUrl}
                             alt={`Preview ${idx + 1}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            className="w-full h-full object-cover"
                           />
                           {idx === 0 && (
-                            <span style={{
-                              position: 'absolute',
-                              bottom: '2px',
-                              left: '2px',
-                              backgroundColor: 'rgba(79, 70, 229, 0.9)',
-                              color: '#fff',
-                              fontSize: '8px',
-                              fontWeight: 'bold',
-                              padding: '1px 4px',
-                              borderRadius: '4px',
-                              letterSpacing: '0.5px'
-                            }}>
+                            <span className="absolute bottom-1 left-1 bg-orange-500 text-slate-950 font-black text-[8px] px-1 rounded uppercase">
                               COVER
                             </span>
                           )}
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveImage(idx);
-                            }}
-                            title="Remove image"
-                            style={{
-                              position: 'absolute',
-                              top: '2px',
-                              right: '2px',
-                              backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '50%',
-                              width: '18px',
-                              height: '18px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '10px',
-                              fontWeight: 'bold',
-                              lineHeight: 1,
-                            }}
+                            onClick={() => handleRemoveImage(idx)}
+                            className="absolute top-1 right-1 bg-rose-600/90 hover:bg-rose-700 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px] cursor-pointer"
                           >
                             ✕
                           </button>
@@ -477,33 +629,32 @@ export default function SupplierDashboard() {
                 )}
               </div>
 
+              {/* 2. Product Title */}
               <div>
-                <label style={labelStyle}>Product Title</label>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  Product Title / Fabric Name <span className="text-orange-400">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Denim Fabric / Cotton Shirts"
-                  style={inputStyle}
+                  placeholder="e.g. 100% Combed Cotton Poplin Shirting"
+                  className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition"
                 />
               </div>
 
-              <div>
-                <label style={labelStyle}>Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Short description of the product"
-                  rows={2}
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Category</label>
-                  <select value={category} onChange={handleCategoryChange} style={inputStyle}>
+              {/* 3. Category & Subcategory */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Category <span className="text-orange-400">*</span>
+                  </label>
+                  <select
+                    value={category}
+                    onChange={handleCategoryChange}
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 capitalize"
+                  >
                     {Object.keys(CATEGORY_MAP).map((cat) => (
                       <option key={cat} value={cat}>
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -512,103 +663,141 @@ export default function SupplierDashboard() {
                   </select>
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Sub-Category</label>
-                  <select value={subCategory} onChange={(e) => setSubCategory(e.target.value)} style={inputStyle}>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Subcategory</label>
+                  <select
+                    value={subCategory}
+                    onChange={(e) => setSubCategory(e.target.value)}
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                  >
                     {(CATEGORY_MAP[category] || []).map((sub) => (
-                      <option key={sub} value={sub}>{sub}</option>
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Price (₹)</label>
+              {/* 4. Price & Inventory */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    Rate (₹/m) <span className="text-orange-400">*</span>
+                  </label>
                   <input
                     type="number"
                     required
-                    min="0"
+                    min="1"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    placeholder="499"
-                    style={inputStyle}
+                    placeholder="e.g. 240"
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Stock</label>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Stock (m)</label>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
-                    placeholder="50"
-                    style={inputStyle}
+                    placeholder="e.g. 500"
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>MOQ</label>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">MOQ (m)</label>
                   <input
                     type="number"
                     min="1"
                     value={moq}
                     onChange={(e) => setMoq(e.target.value)}
-                    placeholder="50"
-                    style={inputStyle}
+                    placeholder="e.g. 50"
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>GSM (Optional)</label>
+              {/* 5. Textile Specs (GSM & Composition) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Fabric GSM</label>
                   <input
-                    type="text"
+                    type="number"
                     value={gsm}
                     onChange={(e) => setGsm(e.target.value)}
-                    placeholder="e.g. 220"
-                    style={inputStyle}
+                    placeholder="e.g. 180"
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Composition (Optional)</label>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Composition</label>
                   <input
                     type="text"
                     value={composition}
                     onChange={(e) => setComposition(e.target.value)}
-                    placeholder="100% Cotton"
-                    style={inputStyle}
+                    placeholder="e.g. 100% Cotton / 80-20 Poly"
+                    className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
+              {/* 6. Color Variants */}
               <div>
-                <label style={labelStyle}>Colors (comma-separated)</label>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Colors Available</label>
                 <input
                   type="text"
                   value={colors}
                   onChange={(e) => setColors(e.target.value)}
-                  placeholder="Red, Blue, Black"
-                  style={inputStyle}
+                  placeholder="e.g. Indigo Blue, Jet Black, Optical White (comma separated)"
+                  className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={addProductMutation?.isPending || addProductMutation?.isLoading}
-                style={{
-                  backgroundColor: (addProductMutation?.isPending || addProductMutation?.isLoading) ? '#312e81' : '#4f46e5',
-                  color: '#fff',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: (addProductMutation?.isPending || addProductMutation?.isLoading) ? 'not-allowed' : 'pointer',
-                  marginTop: '8px'
-                }}
-              >
-                {(addProductMutation?.isPending || addProductMutation?.isLoading) ? 'Uploading Product...' : 'Upload Product'}
-              </button>
+              {/* 7. Description */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Detailed weave description, certifications (GOTS, OEKO-TEX), application..."
+                  className="w-full bg-[#070714] border border-purple-900/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 resize-none"
+                />
+              </div>
+
+              {/* Modal Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-purple-900/30">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-purple-950/40 hover:bg-purple-900/40 border border-purple-800/30 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-extrabold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-orange-500/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      <span>Uploading & Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} strokeWidth={3} />
+                      <span>Save & Add to Catalog</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
             </form>
           </div>
         </div>

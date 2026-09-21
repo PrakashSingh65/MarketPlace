@@ -5,7 +5,8 @@ import { generateToken } from "../utils/generateToken.js";
 export const register = asyncHandler(async (req, res) => {
   const { name, email, phone, role, password } = req.body;
 
-  const userExists = await User.findOne({ email });
+  const normalizedEmail = email?.trim().toLowerCase();
+  const userExists = await User.findOne({ email: normalizedEmail });
 
   if (userExists) {
     return res.status(409).json({
@@ -16,7 +17,7 @@ export const register = asyncHandler(async (req, res) => {
 
   const newUser = await User.create({
     name,
-    email,
+    email: normalizedEmail,
     phone,
     role,
     password,
@@ -55,7 +56,8 @@ export const login = asyncHandler(async (req, res) => {
     });
   }
 
-  const userExists = await User.findOne({ email }).select("+password");
+  const normalizedEmail = email.trim().toLowerCase();
+  const userExists = await User.findOne({ email: normalizedEmail }).select("+password");
 
   if (!userExists) {
     return res.status(401).json({

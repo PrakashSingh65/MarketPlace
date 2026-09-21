@@ -44,6 +44,15 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", routes);
 
+// In development, redirect browser page requests to frontend dev server
+app.use((req, res, next) => {
+  if (req.method === "GET" && req.accepts("html") && !req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
+    const clientBase = process.env.CLIENT_URL || "http://localhost:5173";
+    return res.redirect(`${clientBase}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error("Global Server Error:", err);

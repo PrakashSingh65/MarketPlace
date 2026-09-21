@@ -37,17 +37,21 @@ const Login = () => {
 
     try {
       const response = await login({
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         password: formData.password.trim(),
       });
 
       if (response.success && response.user) {
-        if (response.token) {
-          localStorage.setItem("token", response.token);
-        }
-        localStorage.setItem("user", JSON.stringify(response.user));
-        if (response.user._id) {
-          localStorage.setItem("userId", response.user._id);
+        try {
+          if (response.token) {
+            localStorage.setItem("token", response.token);
+          }
+          localStorage.setItem("user", JSON.stringify(response.user));
+          if (response.user._id) {
+            localStorage.setItem("userId", response.user._id);
+          }
+        } catch (storageErr) {
+          console.warn("LocalStorage access restricted by browser:", storageErr);
         }
 
         dispatch(setUser(response.user));

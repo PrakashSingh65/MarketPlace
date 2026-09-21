@@ -9,8 +9,16 @@ const getInitialUser = () => {
   }
 };
 
+const getInitialToken = () => {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  } catch {
+    return null;
+  }
+};
+
 const initialUser = getInitialUser();
-const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('token');
+const hasToken = !!getInitialToken();
 
 const initialState = {
   user: initialUser,

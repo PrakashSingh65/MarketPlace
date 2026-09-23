@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { CreditCard, QrCode, Banknote, CheckCircle, ArrowLeft, Lock, Edit2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -10,6 +11,7 @@ import { setShippingAddress as setReduxShippingAddress } from '../redux/slice/or
 import { setPaymentMethod as setReduxPaymentMethod, setPaymentStatus } from '../redux/slice/paymentSlice';
 
 export default function Checkout({ onOrderPlaced }) {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { cart, clearCart } = useCart();
   const user = useSelector((state) => state.auth?.user);
@@ -185,7 +187,7 @@ export default function Checkout({ onOrderPlaced }) {
             Payment Method: <span className="text-emerald-400 uppercase font-bold">{paymentMethod}</span>
           </p>
           <button
-            onClick={() => window.location.href = placedOrder?._id ? `/order/${placedOrder._id}` : '/my-orders'}
+            onClick={() => navigate(placedOrder?._id ? `/order/${placedOrder._id}` : '/my-orders')}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition cursor-pointer"
           >
             Track Order Details

@@ -25,6 +25,7 @@ import Profile from "@/pages/Profile";
 import CustomerCare from "@/pages/CustomerCare";
 import AddProduct from "@/pages/AddProduct";
 import MyOrders from "@/pages/MyOrder";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 import App from "@/App";
 
@@ -45,7 +46,14 @@ const router = createBrowserRouter([
       { path: "products", element: <Marketplace /> },
       { path: "categories", element: <CategoriesPage /> },
       { path: "product/:id", element: <ProductDetail /> },
-      { path: "add-product", element: <AddProduct /> },
+      {
+        path: "add-product",
+        element: (
+          <ProtectedRoute allowedRoles={["supplier"]}>
+            <AddProduct />
+          </ProtectedRoute>
+        ),
+      },
       { path: "cart", element: <Cart /> },
       { path: "customer-care", element: <CustomerCare /> },
       { path: "wishlist", element: <Wishlist /> },
@@ -53,9 +61,30 @@ const router = createBrowserRouter([
       { path: "orders", element: <BuyerDashboard /> },
       { path: "my-orders", element: <MyOrders /> },
       { path: "buyer-dashboard", element: <BuyerDashboard /> },
-      { path: "supplier-dashboard", element: <SupplierDashboard /> },
-      { path: "supplier-profile", element: <SupplierProfile /> },
-      { path: "supplier/profile", element: <SupplierProfile /> },
+      {
+        path: "supplier-dashboard",
+        element: (
+          <ProtectedRoute allowedRoles={["supplier"]}>
+            <SupplierDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "supplier-profile",
+        element: (
+          <ProtectedRoute allowedRoles={["supplier"]}>
+            <SupplierProfile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "supplier/profile",
+        element: (
+          <ProtectedRoute allowedRoles={["supplier"]}>
+            <SupplierProfile />
+          </ProtectedRoute>
+        ),
+      },
       { path: "order/:orderId", element: <OrderDetails /> },
       { path: "order-details", element: <OrderDetails /> },
       { path: "order-details/:orderId", element: <OrderDetails /> },

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { axiosClient } from '../api/axiosClient';
+import { axiosClient, getAuthToken, setAuthToken } from '../api/axiosClient';
 import { logout } from '../redux/slice/authSlice';
 import { 
   Package, 
@@ -59,6 +59,12 @@ export default function Profile() {
   });
 
   const fetchUserProfile = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token && !reduxUser) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await axiosClient.get('/users/profile');
@@ -78,6 +84,11 @@ export default function Profile() {
         setAddresses(userData.addresses);
       }
     } catch (err) {
+      if (err.response?.status === 401) {
+        dispatch(logout());
+        navigate('/login?redirect=/profile');
+        return;
+      }
       console.warn('Could not fetch server profile, using local state:', err);
       if (reduxUser) {
         const nameParts = (reduxUser.name || '').split(' ');
@@ -93,13 +104,20 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [reduxUser]);
+  }, [reduxUser, dispatch, navigate]);
 
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
 
   const handleSaveProfile = async (type) => {
+    const token = getAuthToken();
+    if (!token && !reduxUser) {
+      toast.error('Please sign in to update your profile');
+      navigate('/login?redirect=/profile');
+      return;
+    }
+
     try {
       setSaving(true);
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
@@ -126,6 +144,13 @@ export default function Profile() {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
+    const token = getAuthToken();
+    if (!token && !reduxUser) {
+      toast.error('Please sign in to save addresses');
+      navigate('/login?redirect=/profile');
+      return;
+    }
+
     try {
       setSaving(true);
       const { data } = await axiosClient.post('/users/addresses', addressData);
@@ -189,6 +214,7 @@ export default function Profile() {
     } catch (err) {
       console.warn('Server logout error:', err);
     } finally {
+      setAuthToken(null);
       dispatch(logout());
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -198,6 +224,36 @@ export default function Profile() {
       navigate('/login');
     }
   };
+
+  if (!loading && !reduxUser && !getAuthToken()) {
+    return (
+      <div className="bg-slate-950 min-h-screen text-slate-100 flex items-center justify-center p-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
+            <User size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-white">Sign In Required</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Please log in to your account to view and manage your profile and orders.
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={() => navigate('/login?redirect=/profile')}
+              className="w-full bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer shadow-lg shadow-indigo-500/20"
+            >
+              Sign In to Your Account
+            </button>
+            <Link
+              to="/register"
+              className="text-xs text-slate-400 hover:text-indigo-400 transition pt-1"
+            >
+              Don&apos;t have an account? Create one
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-950 min-h-screen text-slate-100 py-8 px-4 md:px-12 font-sans">

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSignup } from "../api/authApi";
 import { setUser } from "../redux/slice/authSlice";
+import { setAuthToken } from "../api/axiosClient";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -42,6 +43,9 @@ export default function Register() {
       });
 
       if (response.success && response.user) {
+        if (response.token) {
+          setAuthToken(response.token);
+        }
         try {
           if (response.token) {
             localStorage.setItem("token", response.token);

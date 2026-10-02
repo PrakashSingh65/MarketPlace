@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useSignOut } from "../api/authApi";
 import { logout } from "../redux/slice/authSlice";
+import { setAuthToken } from "../api/axiosClient";
 import SearchBar from "./SearchBar";
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +24,7 @@ import toast from "react-hot-toast";
 export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const isSupplier = (user?.role || "").toLowerCase() === "supplier";
 
   // Cart Count from Redux state: itemCount or items array length
   const cartItemCount = useSelector((state) => state.cart?.itemCount ?? 0);
@@ -43,6 +45,7 @@ export default function Navbar() {
     } catch (err) {
       console.warn("Logout error:", err);
     } finally {
+      setAuthToken(null);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("userId");
@@ -97,6 +100,15 @@ export default function Navbar() {
               <Sparkles size={13} className="text-orange-400" />
               <span>Plus Zone</span>
             </Link>
+            {isSupplier && (
+              <Link
+                to="/supplier-dashboard"
+                className="bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-500/30 px-3 py-1.5 rounded-full text-cyan-300 hover:text-white transition flex items-center gap-1"
+              >
+                <Store size={13} className="text-cyan-400" />
+                <span>Supplier Dashboard</span>
+              </Link>
+            )}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-ai-assistant'))}
               className="bg-gradient-to-r from-orange-500/20 to-purple-600/20 hover:from-orange-500/30 hover:to-purple-600/30 border border-orange-500/40 hover:border-orange-400 px-3 py-1.5 rounded-full text-orange-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm"
@@ -186,13 +198,15 @@ export default function Navbar() {
                   >
                     <Heart size={16} className="text-pink-500" /> Wishlist
                   </Link>
-                  <Link
-                    to="/supplier-dashboard"
-                    onClick={closeMenu}
-                    className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-purple-900/40 hover:text-cyan-400 transition"
-                  >
-                    <Store size={16} className="text-cyan-400" /> Become a Seller
-                  </Link>
+                  {isSupplier && (
+                    <Link
+                      to="/supplier-dashboard"
+                      onClick={closeMenu}
+                      className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-purple-900/40 hover:text-cyan-400 transition"
+                    >
+                      <Store size={16} className="text-cyan-400" /> Supplier Dashboard
+                    </Link>
+                  )}
                 </div>
 
                 {isAuthenticated ? (

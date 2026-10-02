@@ -32,20 +32,21 @@ export const authMiddleware = async (req, res, next) => {
     }
 }
 
-export const isSupplier = async (req, res, next) => {
+export const isSupplier = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized - Please login first" });
-    }
-    const roleUpper = (req.user.role || '').toUpperCase();
-    if (roleUpper === 'SUPPLIER' || roleUpper === 'SELLER' || roleUpper === 'ADMIN') {
-        return next();
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized - Please login first",
+        });
     }
 
-    try {
-        req.user.role = 'SUPPLIER';
-        await req.user.save();
-        return next();
-    } catch {
-        return next();
+    const role = (req.user.role || '').toLowerCase();
+    if (role !== 'supplier' && role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden: Supplier access required. Buyer accounts are not allowed to perform this action.",
+        });
     }
+
+    next();
 };

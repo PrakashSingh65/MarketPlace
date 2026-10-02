@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Loader2, Mail, Lock, Eye, EyeOff, Sparkles } from "lucide-react";
 import { useSignIn } from "../api/authApi";
 import { setUser } from "../redux/slice/authSlice";
+import { setAuthToken } from "../api/axiosClient";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -16,6 +17,7 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
 
@@ -42,6 +44,9 @@ const Login = () => {
       });
 
       if (response.success && response.user) {
+        if (response.token) {
+          setAuthToken(response.token);
+        }
         try {
           if (response.token) {
             localStorage.setItem("token", response.token);
@@ -58,7 +63,11 @@ const Login = () => {
         queryClient.setQueryData(["user"], { user: response.user, success: true });
         toast.success(`Welcome back, ${response.user.name || "User"}!`);
 
-        if (response.user.role === "SUPPLIER") {
+        const searchParams = new URLSearchParams(location.search);
+        const redirectParam = searchParams.get("redirect");
+        if (redirectParam) {
+          navigate(redirectParam);
+        } else if (response.user.role === "SUPPLIER") {
           navigate("/supplier-dashboard");
         } else {
           navigate("/marketplace");
@@ -70,7 +79,7 @@ const Login = () => {
       if (error.response?.data?.message) {
         setErrorMessage(error.response.data.message);
       } else {
-        setErrorMessage("Invalid email or password. Please try again.");
+        setErrorMessage("Invalid email or password. Please verify your credentials or register a new account.");
       }
     }
   };

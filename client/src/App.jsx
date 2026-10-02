@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Toaster } from "react-hot-toast";
 import { useCheckAuth } from "./api/authApi";
-import { setUser, logout } from "./redux/slice/authSlice";
+import { setUser, logout, setLoading } from "./redux/slice/authSlice";
 import Navbar from "./components/navbar";
 import Footer from "./components/Footer";
 import AIAssistant from "./components/AIAssistant";
@@ -11,7 +11,11 @@ import AIAssistant from "./components/AIAssistant";
 export default function App() {
   const dispatch = useDispatch();
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const { data, isSuccess, isError } = useCheckAuth();
+  const { data, isSuccess, isError, isLoading } = useCheckAuth();
+
+  useEffect(() => {
+    dispatch(setLoading(isLoading));
+  }, [isLoading, dispatch]);
 
   useEffect(() => {
     if (isSuccess && data?.user) {

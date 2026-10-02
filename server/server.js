@@ -39,6 +39,11 @@ app.use(
 );
 app.use(morgan("dev"));
 
+app.use((req, res, next) => {
+  res.setHeader("Permissions-Policy", "unload=*");
+  next();
+});
+
 // Static uploads serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

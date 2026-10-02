@@ -21,6 +21,9 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       host: true,
       allowedHosts: true,
+      headers: {
+        'Permissions-Policy': 'unload=*',
+      },
       proxy: {
         '/api': {
           target,
@@ -29,6 +32,11 @@ export default defineConfig(({ mode }) => {
       },
       watch: {
         usePolling: true,
+      },
+    },
+    preview: {
+      headers: {
+        'Permissions-Policy': 'unload=*',
       },
     },
   };

@@ -6,6 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="India's premier B2B textile marketplace. Connect with verified suppliers, browse wholesale fabrics — Cotton, Silk, Polyester, Wool, Linen & Denim." />
     <title>TexMarket B2B — India's Premier Textile Marketplace</title>
+    <script>
+      // Gracefully redirect legacy 'unload' events to 'pagehide' to prevent Chromium Permissions-Policy violations
+      (function () {
+        try {
+          const origAdd = window.addEventListener;
+          const origRemove = window.removeEventListener;
+          window.addEventListener = function (type, listener, options) {
+            if (type === 'unload') {
+              return origAdd.call(this, 'pagehide', listener, options);
+            }
+            return origAdd.apply(this, arguments);
+          };
+          window.removeEventListener = function (type, listener, options) {
+            if (type === 'unload') {
+              return origRemove.call(this, 'pagehide', listener, options);
+            }
+            return origRemove.apply(this, arguments);
+          };
+        } catch {
+          // Fallback silently if environment prevents modification
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

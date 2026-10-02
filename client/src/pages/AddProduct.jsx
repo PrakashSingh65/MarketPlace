@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { axiosClient } from '../api/axiosClient';
 
 export default function AddProduct() {
   const [formData, setFormData] = useState({
@@ -14,15 +14,24 @@ export default function AddProduct() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // POST request to Express backend
-      const res = await axios.post('/api/products', formData);
-      if (res.status === 201 || res.status === 200) {
+      const payload = {
+        title: formData.name.trim(),
+        name: formData.name.trim(),
+        category: formData.category.trim().toLowerCase(),
+        price: Number(formData.price),
+        composition: formData.material.trim(),
+        image: formData.image.trim(),
+        description: formData.description.trim(),
+      };
+      const res = await axiosClient.post('/product', payload);
+      if (res.status === 201 || res.status === 200 || res.data) {
         alert('Product successfully added!');
         setFormData({ name: '', category: 'Cotton', price: '', material: '', image: '', description: '' });
       }
     } catch (err) {
       console.error('Error adding product:', err);
-      alert('Failed to add product');
+      const msg = err.response?.data?.message || 'Failed to add product';
+      alert(msg);
     }
   };
 

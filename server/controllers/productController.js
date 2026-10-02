@@ -9,7 +9,9 @@ const escapeRegex = (str = '') => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'
 
 export const getProducts = async (req, res) => {
   try {
-    const { category, subCategory, keyword } = req.query;
+    const { category, subCategory } = req.query;
+    const rawKeyword = req.query.keyword || req.query.search || req.query.q || '';
+    const keyword = typeof rawKeyword === 'string' ? rawKeyword : '';
     let query = {};
 
     if (category && category.trim()) {

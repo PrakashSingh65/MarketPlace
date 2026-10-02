@@ -8,7 +8,7 @@ const ProductList = () => {
   const { category, keyword: search } = useSelector((state) => state.productUI.filters);
 
   const { data, isLoading: loading, isError, error: fetchError } = useGetProducts({
-    ...(search && { search }),
+    ...(search && { keyword: search, search }),
     ...(category && { category }),
   });
 

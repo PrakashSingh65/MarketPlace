@@ -16,8 +16,10 @@ services:
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: 5000
       - key: NODE_ENV
         value: production
+

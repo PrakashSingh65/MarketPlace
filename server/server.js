@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
@@ -64,13 +65,62 @@ app.post("/logout", (req, res, next) => {
   routes(req, res, next);
 });
 
-// In development, redirect browser page requests to frontend dev server
-app.use((req, res, next) => {
-  if (req.method === "GET" && req.accepts("html") && !req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
-    const clientBase = process.env.CLIENT_URL || "http://localhost:5173";
-    return res.redirect(`${clientBase}${req.originalUrl}`);
+const clientDistPath = path.resolve(__dirname, "../client/dist");
+const hasClientBuild = fs.existsSync(clientDistPath);
+
+if (hasClientBuild) {
+  app.use(express.static(clientDistPath));
+}
+
+// Health check endpoints for deployment platforms (Render, Railway, AWS, etc.)
+app.get(["/health", "/api/health"], (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    service: "TexMarket API",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root endpoint: serve frontend if built, or informative JSON response
+app.get("/", (req, res) => {
+  if (hasClientBuild) {
+    return res.sendFile(path.join(clientDistPath, "index.html"));
   }
-  next();
+  return res.status(200).json({
+    success: true,
+    message: "TexMarket Backend API is live",
+    version: "1.0.0",
+    healthCheck: "/health",
+    apiBase: "/api/v1"
+  });
+});
+
+// SPA fallback: serve frontend index.html for non-API client routes if built
+if (hasClientBuild) {
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
+      return res.sendFile(path.join(clientDistPath, "index.html"));
+    }
+    next();
+  });
+} else if (process.env.NODE_ENV !== "production") {
+  // In development, redirect browser page requests to frontend dev server
+  app.use((req, res, next) => {
+    if (req.method === "GET" && req.accepts("html") && !req.path.startsWith("/api") && !req.path.startsWith("/uploads")) {
+      const clientBase = process.env.CLIENT_URL || "http://localhost:5173";
+      return res.redirect(`${clientBase}${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
+// 404 handler for unmatched API routes
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+  });
 });
 
 // Global Error Handler

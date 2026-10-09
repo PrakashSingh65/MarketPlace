@@ -1,7 +1,20 @@
 import axios from "axios";
 
-const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const VITE_API_URL = rawApiUrl.replace(/\/+$/, "");
+const getBaseApiUrl = () => {
+  const envUrl = (import.meta.env.VITE_API_URL || "").trim();
+  if (envUrl) {
+    let clean = envUrl.replace(/\/+$/, "");
+    // Strip redundant trailing /api/v1 or /api if already provided in the env var
+    clean = clean.replace(/\/api\/v1\/?$/, "").replace(/\/api\/?$/, "");
+    return `${clean}/api/v1`;
+  }
+  // Fallback in local development
+  if (import.meta.env.DEV) {
+    return "http://localhost:5000/api/v1";
+  }
+  // Relative fallback in production
+  return "/api/v1";
+};
 
 let memoryToken = null;
 
@@ -37,7 +50,7 @@ export const getAuthToken = () => {
 };
 
 export const axiosClient = axios.create({
-  baseURL: `${VITE_API_URL}/api/v1`,
+  baseURL: getBaseApiUrl(),
   withCredentials: true,
 });
 

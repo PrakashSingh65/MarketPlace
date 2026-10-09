@@ -27,8 +27,22 @@ export const createRazorpayOrder = async (req, res) => {
     const { amount, currency = 'INR', receipt, orderId } = req.body;
     const userId = req.user?._id || req.body.userId;
 
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      return res.status(400).json({ message: 'Valid payment amount is required' });
+    // Verify amount from database order if orderId is provided
+    let verifiedAmount = Number(amount);
+    let targetOrder = null;
+
+    if (orderId) {
+      const isObjectId = typeof orderId === 'string' && orderId.match(/^[0-9a-fA-F]{24}$/);
+      targetOrder = await Order.findOne(
+        isObjectId ? { $or: [{ _id: orderId }, { orderId }] } : { orderId }
+      );
+      if (targetOrder && targetOrder.totalAmount) {
+        verifiedAmount = Number(targetOrder.totalAmount);
+      }
+    }
+
+    if (!verifiedAmount || isNaN(verifiedAmount) || verifiedAmount <= 0) {
+      return res.status(400).json({ message: 'Valid payment amount is required', success: false });
     }
 
     const razorpay = getRazorpayInstance();
@@ -40,7 +54,7 @@ export const createRazorpayOrder = async (req, res) => {
     }
 
     const options = {
-      amount: Math.round(Number(amount) * 100), 
+      amount: Math.round(verifiedAmount * 100), 
       currency,
       receipt: receipt || `receipt_${Date.now()}`
     };
@@ -50,9 +64,9 @@ export const createRazorpayOrder = async (req, res) => {
     // Save payment record in DB with user ID if available
     const payment = new Payment({
       user: userId || null,
-      order: orderId && orderId.match(/^[0-9a-fA-F]{24}$/) ? orderId : null,
+      order: targetOrder ? targetOrder._id : (orderId && orderId.match(/^[0-9a-fA-F]{24}$/) ? orderId : null),
       razorpayOrderId: razorpayOrder.id,
-      amount: Number(amount),
+      amount: verifiedAmount,
       currency,
       status: 'Created',
       paymentMethod: 'Razorpay'
@@ -97,7 +111,11 @@ export const verifyPayment = async (req, res) => {
       .update(body.toString())
       .digest('hex');
 
-    const isAuthentic = expectedSignature === razorpay_signature;
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    const signatureBuffer = Buffer.from(razorpay_signature, 'utf8');
+    const isAuthentic =
+      expectedBuffer.length === signatureBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
 
     if (isAuthentic) {
       // Update Payment transaction in DB

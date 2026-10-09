@@ -231,29 +231,22 @@ export const deleteProduct = async (req, res) => {
     }
 
     const isOwner =
-      (product.supplier && product.supplier.toString() === req.user._id.toString()) ||
-      (product.user && product.user.toString() === req.user._id.toString());
+      product.supplier && (product.supplier.equals 
+        ? product.supplier.equals(req.user._id) 
+        : product.supplier.toString() === req.user._id.toString());
 
-    const isAdmin = req.user.role === 'ADMIN';
-    const isSupplier = (req.user.role || '').toUpperCase() === 'SUPPLIER';
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
 
-    // Check if the original supplier is missing or deleted from database
-    let isOrphaned = !product.supplier && !product.user;
-    if (!isOwner && !isAdmin && product.supplier) {
-      const supplierExists = await User.exists({ _id: product.supplier });
-      if (!supplierExists) {
-        isOrphaned = true;
-      }
-    }
-
-    // Allow deletion if: owner, admin, product is orphaned (supplier deleted), or user is an authenticated supplier
-    if (!isOwner && !isAdmin && !isOrphaned && !isSupplier) {
-      return res.status(403).json({ message: 'Not authorized to delete this product' });
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Not authorized: You can only delete your own products' 
+      });
     }
 
     await product.deleteOne();
     await invalidateProductCache(product._id);
-    return res.status(200).json({ message: 'Product removed successfully' });
+    return res.status(200).json({ success: true, message: 'Product removed successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
     return res.status(500).json({ message: 'Error deleting product', error: error.message });

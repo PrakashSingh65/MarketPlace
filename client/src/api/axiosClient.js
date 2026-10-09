@@ -69,6 +69,11 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 404) {
+      const fullUrl = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+      console.error(`[API 404 Not Found] ${error.config?.method?.toUpperCase()} ${fullUrl}`, error.response?.data || '');
+    }
+
     if (error.response?.status === 401) {
       const url = error.config?.url || "";
       const isAuthCall =
